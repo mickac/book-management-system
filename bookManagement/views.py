@@ -1,5 +1,6 @@
 from django.http import HttpResponse
+from django.shortcuts import render
 
 
 def index(request):
-    return HttpResponse("Testing bookManagement on Heroku")
+    return render(request, 'index.html')
