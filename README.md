@@ -1,0 +1,1 @@
+App designed for managing collection of books.
