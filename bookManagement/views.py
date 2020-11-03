@@ -1,6 +1,6 @@
 from django.http import HttpResponse
 from django.http import request
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.core.paginator import(
     Paginator,
     EmptyPage,
@@ -28,10 +28,10 @@ def book_add(request):
                 dashCounter = isbnId.count("-")
                 isbnId = isbnId.replace("-","")
 
-                if(isbnType == 'ISBN_10' and len(isbnId) != 10):
+                if(isbnType == 'ISBN-10' and len(isbnId) != 10):
                     error = "You have to enter ISBN ID of length 10 (or 13 with '-' chars) for ISBN Type 10."
                     return render(request, 'book_add.html', {'e':error, 'form':form})
-                elif(isbnType == 'ISBN_13' and len(isbnId) != 13):
+                elif(isbnType == 'ISBN-13' and len(isbnId) != 13):
                     error = "You have to enter ISBN ID of length 13 (or 17 with '-' chars) for ISBN Type 13."
                     return render(request, 'book_add.html', {'e':error, 'form':form})
                 else:
@@ -121,3 +121,30 @@ def book_search(request):
             error = "Something went wrong. If error occurs often please send error message contained below to administator."
             error_message = str(exception)
             return render(request, 'error.html', {'em':error_message, 'e':error})
+
+def book_edit(request, pk):
+    try:
+        book = get_object_or_404(Book, pk=pk)
+        if request.method == "POST":
+            form = BookForm(request.POST, instance=book)
+            if form.is_valid():
+                isbnType = form.cleaned_data['isbnType']
+                isbnId = form.cleaned_data['isbnId']
+                bookTitle = form.cleaned_data['title']
+                isbnId = isbnId.replace("-","")
+                if(isbnType == 'ISBN-10' and len(isbnId) != 10):
+                    error = "You have to enter ISBN ID of length 10 (or 13 with '-' chars) for ISBN Type 10."
+                    return render(request, 'book_edit.html', {'e':error, 'form':form})
+                elif(isbnType == 'ISBN-13' and len(isbnId) != 13):
+                    error = "You have to enter ISBN ID of length 13 (or 17 with '-' chars) for ISBN Type 13."
+                    return render(request, 'book_edit.html', {'e':error, 'form':form})
+                else:
+                    form.save()
+                    return render(request, 'book_edit.html', {'title':bookTitle, 'form':form})
+        else:
+            form = BookForm(instance=book)
+        return render(request, 'book_edit.html', {'form':form}) 
+    except Exception as exception:
+        error = "Something went wrong. If error occurs often please send error message contained below to administator."
+        error_message = str(exception)
+        return render(request, 'error.html', {'em':error_message, 'e':error})
