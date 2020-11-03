@@ -1,211 +1,38 @@
 {% extends 'base.html' %}
 {% block content %}
-{% if error %}
-<div class="container">
-    <div class="alert alert-danger" role="alert">
-    {{ error }}
-    </div>
-</div>
-{% endif %}
-<div class="container">
-    <div class="row">
-        <div class="col">
-            <h3>List of books:</h3>
-        </div>
-        <div class="col">
-            <form method="GET" action="{% url 'book_search' %}"  role="form" class="form-inline float-right">  
-                <a type="button" class="btn btn-outline my-2 my-sm-0" data-toggle="modal" href="#ModalQuestionmark"></button>
-                    <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-question" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M5.255 5.786a.237.237 0 0 0 .241.247h.825c.138 0 .248-.113.266-.25.09-.656.54-1.134 1.342-1.134.686 0 1.314.343 1.314 1.168 0 .635-.374.927-.965 1.371-.673.489-1.206 1.06-1.168 1.987l.003.217a.25.25 0 0 0 .25.246h.811a.25.25 0 0 0 .25-.25v-.105c0-.718.273-.927 1.01-1.486.609-.463 1.244-.977 1.244-2.056 0-1.511-1.276-2.241-2.673-2.241-1.267 0-2.655.59-2.75 2.286zm1.557 5.763c0 .533.425.927 1.01.927.609 0 1.028-.394 1.028-.927 0-.552-.42-.94-1.029-.94-.584 0-1.009.388-1.009.94z"/>
-                    </svg>
-                </a>             
-                <input class="form-control mr-sm-2" type="text" placeholder='Search' id="searchPlaceholder" aria-label="Search" name="keyword">
-                <select class="browser-default custom-select" name="parameter">
-                    <option selected="">--------</option>
-                    <option value="title">Title</option>
-                    <option value="authors">Author(s)</option>
-                    <option value="language">Language</option>
-                    <option value="publishedDate">Publish date</option>
-                </select>
-                <button class="btn btn-outline-success my-2 my-sm-0" type="submit">
-                    <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-search" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                        <path fill-rule="evenodd" d="M10.442 10.442a1 1 0 0 1 1.415 0l3.85 3.85a1 1 0 0 1-1.414 1.415l-3.85-3.85a1 1 0 0 1 0-1.415z"/>
-                        <path fill-rule="evenodd" d="M6.5 12a5.5 5.5 0 1 0 0-11 5.5 5.5 0 0 0 0 11zM13 6.5a6.5 6.5 0 1 1-13 0 6.5 6.5 0 0 1 13 0z"/>
-                    </svg>
-                </button>
-            </form>
-        </div>
-        <div id="ModalQuestionmark" class="modal hide fade" tabindex="-1">
-            <div class="modal-dialog modal-lg">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h2>Search functionality</h2> 
-                    </div>
-                    <div class="modal-body">
-                        <h5>Choose parameter from parameter combo box then:</h5>
-                        <p><b>For 'Title':</b> Write down title of the book. For example: 'Pan Tadeusz'</p>
-                        <p><b>For 'Author(s)':</b> Write down author(s) name. For example: 'Adam Mickiewicz'.</p>
-                        <p><b>For 'Language':</b> Write down language of the book. For example: 'Polish'.</p>
-                        <p><b>For 'Publish date':</b> Write down publish date in one of following formats:</p>
-                        <ul>a) Exact date in format 'yyyy-mm-dd'. For example: '1834-06-28'.</ul>
-                        <ul>b) Date range in format 'yyyy-mm-dd to yyyy-mm-dd'. For example: '1834-01-01 to 1834-12-31'.</ul>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-                    </div>
-                </div>
+    <div class="container">
+        <div class="row">
+            <div class="col">
+                <h3>List of books:</h3>
             </div>
+            <div class="col">
+            {% block simplesearch_form %}
+                {% include 'items/forms/simplesearch_form.html' %}
+            {% endblock %}
+            </div>
+            {% block questionmark_modal %}
+                {% include 'items/modals/questionmark_modal.html' %}
+            {% endblock %}
         </div>
-    </div>
-    <div class="row" id="books">
-        {% if books %}
-            <div class="col-sm">
-            <table class="table table-bordered">
-                <thead>
-                    <tr>
-                        <th style="width: 20%">Book name</th>
-                        <th style="width: 20%">Author(s)</th>
-                        <th style="width: 20%">Language</th>
-                        <th style="width: 20%">Publish date</th>
-                        <th style="width: 10%" class="text-center">More info</th>
-                        <th style="width: 10%" class="text-center">Edit</th>
-                    </tr>
-                </thead>
-                <tbody>
+        <div class="row" id="books">
+            {% if books %}
+                <div class="col-sm">
+                {% block booklist_table %}
+                    {% include 'items/tables/booklist_table.html' %}
+                {% endblock %}
                 {% for book in books %}
-                    <tr>
-                        <td>{{ book.title }}</td>
-                        <td>{{ book.authors }}</td>
-                        <td>{{ book.language }}</td>
-                        <td>{{ book.publishedDate }}</td>
-                        <td class="text-center">
-                            <a type="button" data-toggle="modal" href="#Modal{{ book.id }}"></button>
-                                <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-info-square" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                                    <path fill-rule="evenodd" d="M14 1H2a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1zM2 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H2z"/>
-                                    <path fill-rule="evenodd" d="M14 1H2a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1zM2 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H2z"/>
-                                    <path d="M8.93 6.588l-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533L8.93 6.588z"/>
-                                    <circle cx="8" cy="4.5" r="1"/>
-                                </svg>
-                            </a> 
-                        </td>
-                        <td class="text-center">
-                            <a href="" type="button">
-                                <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-pencil-square" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456l-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z"/>
-                                    <path fill-rule="evenodd" d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5v11z"/>
-                                </svg>
-                            </a>
-                        </td>
-                    </tr>
+                    {% block moreinfo_modal %}
+                        {% include 'items/modals/moreinfo_modal.html' %}
+                    {% endblock %}
                 {% endfor %}
-                </tbody>
-            </table>
-        {% for book in books %}
-            <div id="Modal{{ book.id }}" class="modal hide fade" tabindex="-1">
-                <div class="modal-dialog modal-lg">
-                    <div class="modal-content">
-                        <div class="modal-body">
-                            <div class="container">
-                                <div class="row">
-                                    <div class="col-6 col-md-4 d-flex justify-content-center" style="padding-right:20px; border-right: 1px solid #ccc;">
-                                        <img src="{{ book.image }}" alt="{{ book.title }}" class="img-fluid border border-dark">
-                                    </div>
-                                    <div class="col-12 col-md-8">
-                                        <div class="row">
-                                            <div class="col col-lg-3">
-                                                <label for="title"><b>{{ book.title }}</b></label>
-                                            </div>
-                                            <div class="col"></div>
-                                            </div>
-                                        <div class="row">
-                                            <div class="col col-lg-3">
-                                                <p>Author(s):</p>
-                                            </div>
-                                            <div class="col">
-                                                <label for="authors">{{ book.authors }}</label>
-                                            </div>
-                                        </div>
-                                        <div class="row">
-                                            <div class="col col-lg-3">
-                                                <p>Publish date:</p>
-                                            </div>
-                                            <div class="col">
-                                                <label for="publishedDate"> {{ book.publishedDate }}</label>
-                                            </div>
-                                        </div>
-                                        <div class="row">
-                                            <div class="col col-lg-3">
-                                                <p>ISBN ID:</p>
-                                            </div>
-                                            <div class="col">
-                                                <label for="isbnId">{{ book.isbnId }}</label>
-                                            </div>
-                                        </div>
-                                        <div class="row">
-                                            <div class="col col-lg-3">
-                                                <p>ISBN Type: </p>
-                                            </div>
-                                            <div class="col">
-                                                <label for="isbnType">{{ book.isbnType }}</label>
-                                            </div>
-                                        </div>
-                                        <div class="row">
-                                            <div class="col col-lg-3">
-                                                <p>Pages:</p>
-                                            </div>
-                                            <div class="col">
-                                                <label for="pageCount">{{ book.pageCount }}</label>
-                                            </div>
-                                        </div>
-                                        <div class="row">
-                                            <div class="col col-lg-3">
-                                                <p>Language: </p>
-                                            </div>
-                                            <div class="col">
-                                                <label for="language">{{ book.language }}</label>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-                        </div>
-                    </div>
+            {% else %}
+                <div class="col-sm">
+                    <p>There are no such books in the system.</p>
                 </div>
-            </div>
-        {% endfor %}
-        {% else %}
-            <div class="col-sm">
-                <p>There are no such books in the system.</p>
-            </div>
-        {% endif %} 
-    </div>
-</div>
-<div class="container">
-    <div class="row justify-content-center" id="pagination">
-    {% if books.has_other_pages %}
-        <div>
-            {% if books.has_previous %}
-                <a href="?page={{ books.previous_page_number }}&keyword={{ keyword }}&parameter={{ parameter }}" class="btn btn-primary btn-sm">&lt;</a>
-            {% else %}
-                <button class="btn btn-primary btn-sm disabled">&lt;</button>
-            {% endif %}
-            {% for i in books.paginator.page_range %}
-                {% if packages.number == i %}
-                <button class="active btn btn-secondary btn-sm"> {{ i }} <span class="sr-only">(current)</span></button>
-                {% else %}
-                <a href="?page={{ i }}&keyword={{ keyword }}&parameter={{ parameter }}" class="btn btn-secondary btn-sm"> {{ i }} </a>
-                {% endif %}
-            {% endfor %}
-            {% if books.has_next %}
-                <a href="?page={{ books.next_page_number }}&keyword={{ keyword }}&parameter={{ parameter }}" class="btn btn-primary btn-sm">&gt;</a>
-            {% else %}
-                <button class="btn btn-primary btn-sm disabled">&gt;</button>
-            {% endif %}
+            {% endif %} 
         </div>
-    {% endif %}
     </div>
-</div>
+    {% block booklist_paginator %}
+        {% include 'items/paginators/booklist_paginator.html' with keyword=keyword parameter=parameter string_keyword="&keyword=" string_parameter="&parameter=" %}
+    {% endblock %}
 {% endblock %}

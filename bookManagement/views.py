@@ -182,3 +182,60 @@ def book_edit(request, pk):
         error = "Something went wrong. If error occurs often please send error message contained below to administator."
         error_message = str(exception)
         return render(request, 'error.html', {'em':error_message, 'e':error})
+
+def book_advanced_searching(request):
+        try:
+            keyword = request.GET.get('keyword')
+            parameter = request.GET.get('parameter')
+            if (parameter == 'title'):
+                book_list = Book.objects.filter(
+                    Q(title__icontains=keyword)
+                )
+            elif (parameter == 'authors'):
+                book_list = Book.objects.filter(
+                    Q(authors__icontains=keyword)
+                )
+            elif (parameter == 'language'):
+                book_list = Book.objects.filter(
+                    Q(language__icontains=keyword)
+                )
+            elif (parameter == 'publishedDate'):
+                format = "%Y-%m-%d"
+                try:
+                    keyword = keyword.split()
+                    if (len(keyword) == 3):
+                        keyword.remove('to')
+                        dateStart = datetime.datetime.strptime(keyword[0], format)
+                        dateEnd = datetime.datetime.strptime(keyword[1], format)
+                        book_list = Book.objects.filter(
+                            Q(publishedDate__range=[dateStart, dateEnd])
+                        )
+                    elif(len(keyword) == 1):
+                        date = datetime.datetime.strptime(keyword[0], format)
+                        book_list = Book.objects.filter(
+                            Q(publishedDate__icontains=date)
+                        )
+                    else:
+                        raise ValueError
+                except ValueError:
+                    error = "There is something wrong with date range you have passed. For additional information about search functionality, click question mark near search field. If error still occures contact the administrator."
+                    return render(request, 'book_search.html', { 'error':error })
+            else:
+                error = "Please choose parameter first!"
+                return render(request, 'book_search.html', { 'error':error })
+            
+            page = request.GET.get('page', 1)
+            paginator = Paginator(book_list, 5)
+
+            try:
+                books = paginator.page(page)
+            except PageNotAnInteger:
+                books = paginator.page(1)
+            except EmptyPage:
+                books = paginator.page(paginator.num_pages)
+
+            return render(request, 'book_search.html', { 'books': books, 'keyword':keyword, 'parameter':parameter }) 
+        except Exception as exception:
+            error = "Something went wrong. If error occurs often please send error message contained below to administator."
+            error_message = str(exception)
+            return render(request, 'error.html', {'em':error_message, 'e':error})

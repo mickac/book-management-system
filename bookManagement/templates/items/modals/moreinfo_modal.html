@@ -1,0 +1,74 @@
+<div id="Modal{{ book.id }}" class="modal hide fade" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-body">
+                <div class="container">
+                    <div class="row">
+                        <div class="col-6 col-md-4 d-flex justify-content-center" style="padding-right:20px; border-right: 1px solid #ccc;">
+                            <img src="{{ book.image }}" alt="{{ book.title }}" class="img-fluid border border-dark">
+                        </div>
+                        <div class="col-12 col-md-8">
+                            <div class="row">
+                                <div class="col col-lg-3">
+                                    <label for="title"><b>{{ book.title }}</b></label>
+                                </div>
+                                <div class="col"></div>
+                                </div>
+                            <div class="row">
+                                <div class="col col-lg-3">
+                                    <p>Author(s):</p>
+                                </div>
+                                <div class="col">
+                                    <label for="authors">{{ book.authors }}</label>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col col-lg-3">
+                                    <p>Publish date:</p>
+                                </div>
+                                <div class="col">
+                                    <label for="publishedDate"> {{ book.publishedDate }}</label>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col col-lg-3">
+                                    <p>ISBN ID:</p>
+                                </div>
+                                <div class="col">
+                                    <label for="isbnId">{{ book.isbnId }}</label>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col col-lg-3">
+                                    <p>ISBN Type: </p>
+                                </div>
+                                <div class="col">
+                                    <label for="isbnType">{{ book.isbnType }}</label>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col col-lg-3">
+                                    <p>Pages:</p>
+                                </div>
+                                <div class="col">
+                                    <label for="pageCount">{{ book.pageCount }}</label>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col col-lg-3">
+                                    <p>Language: </p>
+                                </div>
+                                <div class="col">
+                                    <label for="language">{{ book.language }}</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>

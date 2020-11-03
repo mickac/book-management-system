@@ -1,0 +1,25 @@
+<div class="container">
+    <div class="row justify-content-center" id="pagination">
+    {% if books.has_other_pages %}
+        <div>
+            {% if books.has_previous %}
+                <a href="?page={{ books.previous_page_number }}{{string_keyword}}{{keyword}}{{string_parameter}}{{parameter}}" class="btn btn-primary btn-sm">&lt;</a>
+            {% else %}
+                <button class="btn btn-primary btn-sm disabled">&lt;</button>
+            {% endif %}
+            {% for i in books.paginator.page_range %}
+                {% if books.number == i %}
+                <button class="active btn btn-secondary btn-sm"> {{ i }} <span class="sr-only">(current)</span></button>
+                {% else %}
+                <a href="?page={{ i }}{{string_keyword}}{{keyword}}{{string_parameter}}{{parameter}}" class="btn btn-secondary btn-sm"> {{ i }} </a>
+                {% endif %}
+            {% endfor %}
+            {% if books.has_next %}
+                <a href="?page={{ books.next_page_number }}{{string_keyword}}{{keyword}}{{string_parameter}}{{parameter}}" class="btn btn-primary btn-sm">&gt;</a>
+            {% else %}
+                <button class="btn btn-primary btn-sm disabled">&gt;</button>
+            {% endif %}
+        </div>
+    {% endif %}
+    </div>
+</div>
