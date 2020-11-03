@@ -1,3 +1,11 @@
+"""
+    TODO:
+    - ISBN Validation (if ISBN-13 have 17 characters with dashes is good, but user can enter 17 characters without dashes - system will accept that, but value is wrong)
+    - Fixing pagination with search functionality
+
+"""
+
+
 from django.http import HttpResponse
 from django.http import request
 from django.shortcuts import render, redirect, get_object_or_404
@@ -17,7 +25,6 @@ def index(request):
     return render(request, 'index.html')
 
 def book_add(request):
-    #Todo - better ISDN ID validation
     if request.method == 'POST':
         form = BookForm(request.POST)
         if form.is_valid():
@@ -98,7 +105,7 @@ def book_search(request):
                             Q(publishedDate__icontains=date)
                         )
                     else:
-                       raise ValueError
+                        raise ValueError
                 except ValueError:
                     error = "There is something wrong with date range you have passed. For additional information about search functionality, click question mark near search field. If error still occures contact the administrator."
                     return render(request, 'book_search.html', { 'error':error })
