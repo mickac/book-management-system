@@ -1,7 +1,6 @@
 """
     TODO:
     - ISBN Validation (if ISBN-13 have 17 characters with dashes is good, but user can enter 17 characters without dashes - system will accept that, but value is wrong)
-    - Fixing pagination with search functionality
 
 """
 
@@ -74,8 +73,8 @@ def book_list(request):
 
 def book_search(request):
         try:
-            keyword = request.POST.get('keyword')
-            parameter = request.POST.get('parameter')
+            keyword = request.GET.get('keyword')
+            parameter = request.GET.get('parameter')
             if (parameter == 'title'):
                 book_list = Book.objects.filter(
                     Q(title__icontains=keyword)
@@ -123,7 +122,7 @@ def book_search(request):
             except EmptyPage:
                 books = paginator.page(paginator.num_pages)
 
-            return render(request, 'book_search.html', { 'books': books }) 
+            return render(request, 'book_search.html', { 'books': books, 'keyword':keyword, 'parameter':parameter }) 
         except Exception as exception:
             error = "Something went wrong. If error occurs often please send error message contained below to administator."
             error_message = str(exception)
