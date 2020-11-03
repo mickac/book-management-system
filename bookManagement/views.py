@@ -11,6 +11,8 @@ from django.db.models import Q
 from .forms import BookForm
 from .models import Book
 
+import datetime
+
 def index(request):
     return render(request, 'index.html')
 
@@ -65,7 +67,6 @@ def book_list(request):
 
 def book_search(request):
         try:
-            # 2020-10-20 to 2020-10-30
             keyword = request.POST.get('keyword')
             parameter = request.POST.get('parameter')
             if (parameter == 'title'):
@@ -81,17 +82,29 @@ def book_search(request):
                     Q(language__icontains=keyword)
                 )
             elif (parameter == 'publishedDate'):
+                format = "%Y-%m-%d"
                 try:
                     keyword = keyword.split()
-                    keyword.remove('to')
-                    dateStart = keyword[0]
-                    dateEnd = keyword[1]
-                    book_list = Book.objects.filter(
-                        Q(publishedDate__range=[dateStart, dateEnd])
-                    )
-                except:
-                    error = "There is something wrong with date range you have passed. It has to be in following format: 'yyyy-mm-dd to yyy-mm-dd'. If error still occures contact the administrator."
+                    if (len(keyword) == 3):
+                        keyword.remove('to')
+                        dateStart = datetime.datetime.strptime(keyword[0], format)
+                        dateEnd = datetime.datetime.strptime(keyword[1], format)
+                        book_list = Book.objects.filter(
+                            Q(publishedDate__range=[dateStart, dateEnd])
+                        )
+                    elif(len(keyword) == 1):
+                        date = datetime.datetime.strptime(keyword[0], format)
+                        book_list = Book.objects.filter(
+                            Q(publishedDate__icontains=date)
+                        )
+                    else:
+                       raise ValueError
+                except ValueError:
+                    error = "There is something wrong with date range you have passed. For additional information about search functionality, click question mark near search field. If error still occures contact the administrator."
                     return render(request, 'book_search.html', { 'error':error })
+            else:
+                error = "Please choose parameter first!"
+                return render(request, 'book_search.html', { 'error':error })
             
             page = request.GET.get('page', 1)
             paginator = Paginator(book_list, 5)
