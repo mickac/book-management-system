@@ -1,7 +1,6 @@
 """
     TODO:
-    - ISBN Validation (if ISBN-13 have 17 characters with dashes is good, but user can enter 17 characters without dashes - system will accept that, but value is wrong)
-
+    - PEP8 Validation + Doing some modules for repeating methods
 """
 
 
@@ -31,17 +30,31 @@ def book_add(request):
                 isbnType = form.cleaned_data['isbnType']
                 isbnId = form.cleaned_data['isbnId']
                 bookTitle = form.cleaned_data['title']
-                dashCounter = isbnId.count("-")
-                isbnId = isbnId.replace("-","")
-
-                if(isbnType == 'ISBN-10' and len(isbnId) != 10):
-                    error = "You have to enter ISBN ID of length 10 (or 13 with '-' chars) for ISBN Type 10."
+                #[1],[6],[11] - ISBN-10
+                #[3],[5],[10],[15] -ISBN-13
+                try:
+                    dashesValidation = True
+                    dashesValidationString = list(isbnId)
+                    dashCounter = dashesValidationString.count('-')
+                    if(isbnType == 'ISBN-10' and ((dashesValidationString[1] != '-' or dashesValidationString[6] != '-' or dashesValidationString[11] != '-') and dashCounter == 3)):
+                        dashesValidation = False
+                    if(isbnType == 'ISBN-13' and ((dashesValidationString[3] != '-' or dashesValidationString[5] != '-' or dashesValidationString[10] != '-' or dashesValidationString[15] != '-') and dashCounter == 4)):
+                        dashesValidation = False
+                    isbnId = isbnId.replace("-","")
+                except:
+                    error = "Wrong ISBN ID!"
                     return render(request, 'book_add.html', {'e':error, 'form':form})
-                elif(isbnType == 'ISBN-13' and len(isbnId) != 13):
-                    error = "You have to enter ISBN ID of length 13 (or 17 with '-' chars) for ISBN Type 13."
+
+                if(isbnType == 'ISBN-10' and (len(isbnId) != 10 or dashesValidation == False)):
+                    error = "Wrong ISBN ID for ISBN-10 type. Check ISBN ID and try again! (Length should be 10 without dashes or 13 with dashes)"
+                    return render(request, 'book_add.html', {'e':error, 'form':form})
+                elif(isbnType == 'ISBN-13' and len(isbnId) != 13 and dashesValidation == False):
+                    error = "Wrong ISBN ID for ISBN-13 type. Check ISBN ID and try again! (Length should be 13 without dashes or 17 with dashes)"
                     return render(request, 'book_add.html', {'e':error, 'form':form})
                 else:
-                    form.save()
+                    book = form.save(commit=False)
+                    book.isbnId = isbnId
+                    book.save()
                     form = BookForm()
                     return render(request, 'book_add.html', {'title':bookTitle, 'form':form})
             except Exception as exception:
@@ -137,15 +150,29 @@ def book_edit(request, pk):
                 isbnType = form.cleaned_data['isbnType']
                 isbnId = form.cleaned_data['isbnId']
                 bookTitle = form.cleaned_data['title']
-                isbnId = isbnId.replace("-","")
-                if(isbnType == 'ISBN-10' and len(isbnId) != 10):
-                    error = "You have to enter ISBN ID of length 10 (or 13 with '-' chars) for ISBN Type 10."
+                try:
+                    dashesValidation = True
+                    dashesValidationString = list(isbnId)
+                    dashCounter = dashesValidationString.count('-')
+                    if(isbnType == 'ISBN-10' and ((dashesValidationString[1] != '-' or dashesValidationString[6] != '-' or dashesValidationString[11] != '-') and dashCounter == 3)):
+                        dashesValidation = False
+                    if(isbnType == 'ISBN-13' and ((dashesValidationString[3] != '-' or dashesValidationString[5] != '-' or dashesValidationString[10] != '-' or dashesValidationString[15] != '-') and dashCounter == 4)):
+                        dashesValidation = False
+                    isbnId = isbnId.replace("-","")
+                except:
+                    error = "Wrong ISBN ID!"
                     return render(request, 'book_edit.html', {'e':error, 'form':form})
-                elif(isbnType == 'ISBN-13' and len(isbnId) != 13):
-                    error = "You have to enter ISBN ID of length 13 (or 17 with '-' chars) for ISBN Type 13."
+
+                if(isbnType == 'ISBN-10' and (len(isbnId) != 10 or dashesValidation == False)):
+                    error = "Wrong ISBN ID for ISBN-10 type. Check ISBN ID and try again! (Length should be 10 without dashes or 13 with dashes)"
+                    return render(request, 'book_edit.html', {'e':error, 'form':form})
+                elif(isbnType == 'ISBN-13' and len(isbnId) != 13 and dashesValidation == False):
+                    error = "Wrong ISBN ID for ISBN-13 type. Check ISBN ID and try again! (Length should be 13 without dashes or 17 with dashes)"
                     return render(request, 'book_edit.html', {'e':error, 'form':form})
                 else:
-                    form.save()
+                    book = form.save(commit=False)
+                    book.isbnId = isbnId
+                    book.save()
                     return render(request, 'book_edit.html', {'title':bookTitle, 'form':form})
         else:
             form = BookForm(instance=book)
