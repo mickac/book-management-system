@@ -9,6 +9,11 @@
             {{ e }}<br>
             </div>
         {% endif %}
+        {% if title %}
+            <div class="alert alert-success" role="alert">
+                Book <i>{{ title }}</i> has been successfully added.
+            </div>
+        {% endif %}
         <h4>Add new book</h4>
         <form method="POST">
             {% csrf_token %}

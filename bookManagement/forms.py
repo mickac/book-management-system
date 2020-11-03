@@ -2,10 +2,6 @@ from django import forms
 
 from .models import Book
 
-ISBN_TYPE_CHOICES = [
-    ('10', 'ISBN 10'),
-    ('13', 'ISBN 13'),
-]
 class BookForm(forms.ModelForm):
 
     class Meta:
