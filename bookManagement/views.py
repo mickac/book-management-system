@@ -1,6 +1,7 @@
 """
     TODO:
     - PEP8 Validation + Doing some modules for repeating methods
+    - Feed from Google API
     - REST API
 """
 
