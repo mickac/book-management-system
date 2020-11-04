@@ -187,7 +187,7 @@ def book_edit(request, pk):
 def book_advanced_searching(request):
     if request.method == 'GET':
         if (len(request.GET) > 0):
-            print(request.GET)
+
             title = request.GET.get('title')
             authors = request.GET.get('authors')
             language = request.GET.get('language')
@@ -196,28 +196,35 @@ def book_advanced_searching(request):
             dateStart = request.GET.get('dateStart')
             dateEnd = request.GET.get('dateEnd')
             exactDate = request.GET.get('exactDate')
+
             if (request.GET.get("parameter") == '2'):
+                dict = request.GET
+                result = list(filter(lambda x: x == '',(list(dict.values()))))
+                emptyFieldsCounter = result.count('')
                 try:
-                    if(dateStart == "" and dateEnd == ""):
+                    if(dateStart == "" and dateEnd == "" and emptyFieldsCounter == 2):
                         book_list = Book.objects.filter(
-                            Q(title__exact=title) | 
-                            Q(authors__exact=authors) | 
-                            Q(language__exact=language) | 
-                            Q(isbnId__exact=isbnId) |
-                            Q(pageCount__exact=pageCount) | 
+                            Q(title__exact=title) & 
+                            Q(authors__exact=authors) & 
+                            Q(language__exact=language) & 
+                            Q(isbnId__exact=isbnId) &
+                            Q(pageCount__exact=pageCount) & 
                             Q(publishedDate__exact=exactDate)
                         )
-                    elif(exactDate == ""):
+                    elif(exactDate == "" and emptyFieldsCounter == 1):
                         book_list = Book.objects.filter(
-                            Q(title__exact=title) | 
-                            Q(authors__exact=authors) | 
-                            Q(language__exact=language) | 
-                            Q(isbnId__exact=isbnId) |
-                            Q(pageCount__exact=pageCount) | 
+                            Q(title__exact=title) &
+                            Q(authors__exact=authors) & 
+                            Q(language__exact=language) & 
+                            Q(isbnId__exact=isbnId) &
+                            Q(pageCount__exact=pageCount) & 
                             Q(publishedDate__range=[dateStart, dateEnd]) 
                         )
+                    elif(emptyFieldsCounter > 2):
+                        error = 'You are missing some field(s). Please fill them!'
+                        return render(request, 'book_advanced_searching.html', { 'error': error })
                     else:
-                        error = 'Use "Exact date" OR "Date from, Date to" for contants all field!'
+                        error = 'Use "Exact date" OR "Date from, Date to" for contains all field!'
                         return render(request, 'book_advanced_searching.html', { 'error': error })
                     page = request.GET.get('page', 1)
                     paginator = Paginator(book_list, 5)
@@ -228,6 +235,9 @@ def book_advanced_searching(request):
                     except EmptyPage:
                         books = paginator.page(paginator.num_pages)
 
+                    if (book_list.exists() == False):
+                        nobooks = True
+                        return render(request, 'book_advanced_searching.html', { 'nobooks': nobooks, 'books':books })
                     return render(request, 'book_advanced_searching.html', { 'books': books })
                 except Exception as error:
                     return render(request, 'book_advanced_searching.html', {'error':error})

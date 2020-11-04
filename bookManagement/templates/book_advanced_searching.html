@@ -9,10 +9,15 @@
             {% block booklist_table %}
                 {% include 'items/tables/booklist_table.html'%}
             {% endblock %}
+            {% for book in books %}
+                {% block moreinfo_modal %}
+                    {% include 'items/modals/moreinfo_modal.html' %}
+                {% endblock %}
+            {% endfor %}
         {% endif %}
         {% if nobooks %}
             <h3>Results:</h3>
-                <p>There are no such books in the system.</p>
+                <p>There are no such book(s) in the system.</p>
         {% endif %}
     </div>
 {% endblock %}
