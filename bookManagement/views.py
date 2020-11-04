@@ -1,10 +1,11 @@
 """
     TODO:
     - PEP8 Validation + Doing some modules for repeating methods
-    - Advanced search functionality
+    - Advanced search functionality fixes
 """
 
 
+from django.core.exceptions import ValidationError
 from django.http import HttpResponse
 from django.http import request
 from django.shortcuts import render, redirect, get_object_or_404
@@ -15,7 +16,7 @@ from django.core.paginator import(
 )
 from django.db.models import Q
 
-from .forms import BookForm
+from .forms import BookForm, AdvancedSearch
 from .models import Book
 
 import datetime
@@ -184,58 +185,74 @@ def book_edit(request, pk):
         return render(request, 'error.html', {'em':error_message, 'e':error})
 
 def book_advanced_searching(request):
-        try:
-            keyword = request.GET.get('keyword')
-            parameter = request.GET.get('parameter')
-            if (parameter == 'title'):
-                book_list = Book.objects.filter(
-                    Q(title__icontains=keyword)
-                )
-            elif (parameter == 'authors'):
-                book_list = Book.objects.filter(
-                    Q(authors__icontains=keyword)
-                )
-            elif (parameter == 'language'):
-                book_list = Book.objects.filter(
-                    Q(language__icontains=keyword)
-                )
-            elif (parameter == 'publishedDate'):
-                format = "%Y-%m-%d"
-                try:
-                    keyword = keyword.split()
-                    if (len(keyword) == 3):
-                        keyword.remove('to')
-                        dateStart = datetime.datetime.strptime(keyword[0], format)
-                        dateEnd = datetime.datetime.strptime(keyword[1], format)
-                        book_list = Book.objects.filter(
-                            Q(publishedDate__range=[dateStart, dateEnd])
-                        )
-                    elif(len(keyword) == 1):
-                        date = datetime.datetime.strptime(keyword[0], format)
-                        book_list = Book.objects.filter(
-                            Q(publishedDate__icontains=date)
-                        )
-                    else:
-                        raise ValueError
-                except ValueError:
-                    error = "There is something wrong with date range you have passed. For additional information about search functionality, click question mark near search field. If error still occures contact the administrator."
-                    return render(request, 'book_search.html', { 'error':error })
-            else:
-                error = "Please choose parameter first!"
-                return render(request, 'book_search.html', { 'error':error })
-            
-            page = request.GET.get('page', 1)
-            paginator = Paginator(book_list, 5)
-
+    if request.method == 'POST':
+        form = AdvancedSearch(request.POST)
+        if form.is_valid():
+            title = form.cleaned_data.get('title')
+            authors = form.cleaned_data.get('authors')
+            language = form.cleaned_data.get('language')
+            isbnId = form.cleaned_data.get('isbnId')
+            pageCount = form.cleaned_data.get('pageCount')
+            dateStart = form.cleaned_data.get('dateStart')
+            dateEnd = form.cleaned_data.get('dateEnd')
+            exactDate = form.cleaned_data.get('exactDate')
+            if(exactDate == None):
+                exactDate = ""
+            if(pageCount == None):
+                pageCount = 0
             try:
-                books = paginator.page(page)
-            except PageNotAnInteger:
-                books = paginator.page(1)
-            except EmptyPage:
-                books = paginator.page(paginator.num_pages)
+                if(dateStart == "" and dateEnd == ""):
+                    book_list = Book.objects.filter(
+                        Q(title__exact=title) | 
+                        Q(authors__exact=authors) | 
+                        Q(language__exact=language) | 
+                        Q(isbnId__exact=isbnId) |
+                        Q(pageCount__exact=pageCount) | 
+                        Q(publishedDate__icontains=exactDate)
+                    )
+                if(dateStart != "" and dateEnd == ""):
+                    book_list = Book.objects.filter(
+                        Q(title__exact=title) | 
+                        Q(authors__exact=authors) | 
+                        Q(language__exact=language) | 
+                        Q(isbnId__exact=isbnId) |
+                        Q(pageCount__exact=pageCount) | 
+                        Q(publishedDate__icontains=exactDate) | 
+                        Q(publishedDate__range=[dateStart, datetime.datetime.now()]) 
+                    )
+                elif(dateStart == "" and dateEnd != ""):
+                    book_list = Book.objects.filter(
+                        Q(title__exact=title) | 
+                        Q(authors__exact=authors) | 
+                        Q(language__exact=language) | 
+                        Q(isbnId__exact=isbnId) |
+                        Q(pageCount__exact=pageCount) | 
+                        Q(publishedDate__icontains=exactDate) | 
+                        Q(publishedDate__range=["1000-01-01", dateEnd]) 
+                    )
+                else:
+                    book_list = Book.objects.filter(
+                        Q(title__exact=title) | 
+                        Q(authors__exact=authors) | 
+                        Q(language__exact=language) | 
+                        Q(isbnId__exact=isbnId) |
+                        Q(pageCount__exact=pageCount) | 
+                        Q(publishedDate__icontains=exactDate) |
+                        Q(publishedDate__range=[dateStart, dateEnd]) 
+                    )
+                page = request.GET.get('page', 1)
+                paginator = Paginator(book_list, 5)
+                try:
+                    books = paginator.page(page)
+                except PageNotAnInteger:
+                    books = paginator.page(1)
+                except EmptyPage:
+                    books = paginator.page(paginator.num_pages)
 
-            return render(request, 'book_search.html', { 'books': books, 'keyword':keyword, 'parameter':parameter }) 
-        except Exception as exception:
-            error = "Something went wrong. If error occurs often please send error message contained below to administator."
-            error_message = str(exception)
-            return render(request, 'error.html', {'em':error_message, 'e':error})
+                return render(request, 'book_search.html', { 'books': books })
+            except Exception as error:
+                return render(request, 'book_advanced_searching.html', {'error':error})
+        else:
+            return render(request, 'book_search.html')
+    else:
+        return render(request, 'book_advanced_searching.html', {'error':"smth"})

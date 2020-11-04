@@ -1,0 +1,63 @@
+{% load widget_tweaks %}
+<div class="container">
+    {% if error %}
+        <div class="alert alert-danger" role="alert">
+            Date field is in wrong format! {{error}}
+        </div>
+    {% endif %}
+    <h2>Advanced search</h2>
+    <form method="post">
+        {% csrf_token %}
+        <div class="row">
+            <div class="form-group col-md-4">
+                <label for="titleLabel">Title</label>
+                <input type="text" class="form-control" name="title" placeholder="Write down title of the book">
+            </div>
+            <div class="form-group col-md-4">
+                <label for="authorsLabel">Author(s)</label>
+                <input type="text" class="form-control" name="authors" placeholder="Wirte down author(s) of the book">
+            </div>
+            <div class="form-group col-md-4">
+                <label for="languageLabel">Language</label>
+                <input type="text" class="form-control" name="language" placeholder="Wirte down language of the book">
+            </div>
+        </div>
+        <div class="row">
+            <div class="form-group col-md-4">
+                <label for="isbnIdLabel">ISBN ID</label>
+                <input type="text" class="form-control" name="isbnId" placeholder="Wirte down ISBN ID of the book">
+            </div>
+            <div class="form-group col-md-4">
+                <label for="pageCountLabel">Number of pages</label>
+                <input type="text" class="form-control" name="pageCount" placeholder="Wirte down pages number of the book">
+            </div>
+            <div class="form-group col-md-4">
+                <label for="exactDateLabel">Exact date</label>
+                <input type="text" class="form-control" name="exactDate" placeholder="Use yyyy-mm-dd format.">
+            </div>
+        </div>
+        <div class="d-flex justify-content-center">
+            <div class="form-group">
+                <label for="dateStartLabel">Date from:</label>
+                <input type="text" class="form-control" name="dateStart" placeholder="Start date">
+                <small id="dateStartHelpBlock" class="form-text text-muted">
+                    Use yyyy-mm-dd format.
+                </small>
+            </div>
+            <div class="form-group">
+                <label for="dateEndLabel">Date to:</label>
+                <input type="text" class="form-control" name="dateEnd" placeholder="End date">
+                <small id="dateEndHelpBlock" class="form-text text-muted">
+                    Use yyyy-mm-dd format.
+                </small>
+            </div>
+        </div>
+        <div class="d-flex justify-content-center">
+            <div class="form-group">
+                <button type="submit" class="btn btn-primary text-center">
+                    <span class="glyphicon glyphicon-ok"></span> Search
+                </button>
+            </div>
+        </div>
+    </form>   
+</div>
