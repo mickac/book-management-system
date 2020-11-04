@@ -1,7 +1,7 @@
 """
     TODO:
     - PEP8 Validation + Doing some modules for repeating methods
-    - Advanced search functionality fixes
+    - REST API
 """
 
 
@@ -187,7 +187,7 @@ def book_edit(request, pk):
 def book_advanced_searching(request):
     if request.method == 'GET':
         if (len(request.GET) > 0):
-
+            parameter = request.GET.get("parameter")
             title = request.GET.get('title')
             authors = request.GET.get('authors')
             language = request.GET.get('language')
@@ -197,7 +197,7 @@ def book_advanced_searching(request):
             dateEnd = request.GET.get('dateEnd')
             exactDate = request.GET.get('exactDate')
 
-            if (request.GET.get("parameter") == '2'):
+            if (parameter == '2'):
                 dict = request.GET
                 result = list(filter(lambda x: x == '',(list(dict.values()))))
                 emptyFieldsCounter = result.count('')
@@ -241,7 +241,7 @@ def book_advanced_searching(request):
                     return render(request, 'book_advanced_searching.html', { 'books': books })
                 except Exception as error:
                     return render(request, 'book_advanced_searching.html', {'error':error})
-            elif(request.GET.get("parameter") == '1'):
+            elif(parameter == '1'):
                 if(exactDate == ""):
                     exactDate = "1000-01-01"
                 if(pageCount == ""):
@@ -300,13 +300,13 @@ def book_advanced_searching(request):
                         nobooks = True
                         return render(request, 'book_advanced_searching.html', { 'nobooks': nobooks, 'books':books })
                     else:
-                        return render(request, 'book_advanced_searching.html', { 'books': books })
+                        return render(request, 'book_advanced_searching.html', { 'books': books, 'parameter':parameter, 'title':title, 'authors':authors, 'language':language, 'isbnId':isbnId, 'pageCount':pageCount, 'dateStart':dateStart, dateEnd:'dateEnd', 'exactDate':exactDate })
                 except Exception as error:
                     return render(request, 'book_advanced_searching.html', {'error':error})
-            elif(request.GET.get("parameter") == '0'):
+            elif(parameter == '0'):
                 error = "Please choose Search parameter first!"
                 return render(request, 'book_advanced_searching.html', {'error': error})
         else:
             return render(request, 'book_advanced_searching.html')
     else:
-        return render(request, 'book_advanced_searching.html', {'error':"smth"})
+        return render(request, 'book_advanced_searching.html')

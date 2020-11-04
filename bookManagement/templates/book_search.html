@@ -33,6 +33,9 @@
         </div>
     </div>
     {% block booklist_paginator %}
-        {% include 'items/paginators/booklist_paginator.html' with keyword=keyword parameter=parameter string_keyword="&keyword=" string_parameter="&parameter=" %}
+        {% load create_list %}
+        {% create_list '&keyword=' keyword '&parameter=' parameter as arguments %}
+        {% include 'items/paginators/booklist_paginator.html' %}
     {% endblock %}
 {% endblock %}
+
