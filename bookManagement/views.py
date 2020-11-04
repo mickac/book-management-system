@@ -185,74 +185,118 @@ def book_edit(request, pk):
         return render(request, 'error.html', {'em':error_message, 'e':error})
 
 def book_advanced_searching(request):
-    if request.method == 'POST':
-        form = AdvancedSearch(request.POST)
-        if form.is_valid():
-            title = form.cleaned_data.get('title')
-            authors = form.cleaned_data.get('authors')
-            language = form.cleaned_data.get('language')
-            isbnId = form.cleaned_data.get('isbnId')
-            pageCount = form.cleaned_data.get('pageCount')
-            dateStart = form.cleaned_data.get('dateStart')
-            dateEnd = form.cleaned_data.get('dateEnd')
-            exactDate = form.cleaned_data.get('exactDate')
-            if(exactDate == None):
-                exactDate = ""
-            if(pageCount == None):
-                pageCount = 0
-            try:
-                if(dateStart == "" and dateEnd == ""):
-                    book_list = Book.objects.filter(
-                        Q(title__exact=title) | 
-                        Q(authors__exact=authors) | 
-                        Q(language__exact=language) | 
-                        Q(isbnId__exact=isbnId) |
-                        Q(pageCount__exact=pageCount) | 
-                        Q(publishedDate__icontains=exactDate)
-                    )
-                if(dateStart != "" and dateEnd == ""):
-                    book_list = Book.objects.filter(
-                        Q(title__exact=title) | 
-                        Q(authors__exact=authors) | 
-                        Q(language__exact=language) | 
-                        Q(isbnId__exact=isbnId) |
-                        Q(pageCount__exact=pageCount) | 
-                        Q(publishedDate__icontains=exactDate) | 
-                        Q(publishedDate__range=[dateStart, datetime.datetime.now()]) 
-                    )
-                elif(dateStart == "" and dateEnd != ""):
-                    book_list = Book.objects.filter(
-                        Q(title__exact=title) | 
-                        Q(authors__exact=authors) | 
-                        Q(language__exact=language) | 
-                        Q(isbnId__exact=isbnId) |
-                        Q(pageCount__exact=pageCount) | 
-                        Q(publishedDate__icontains=exactDate) | 
-                        Q(publishedDate__range=["1000-01-01", dateEnd]) 
-                    )
-                else:
-                    book_list = Book.objects.filter(
-                        Q(title__exact=title) | 
-                        Q(authors__exact=authors) | 
-                        Q(language__exact=language) | 
-                        Q(isbnId__exact=isbnId) |
-                        Q(pageCount__exact=pageCount) | 
-                        Q(publishedDate__icontains=exactDate) |
-                        Q(publishedDate__range=[dateStart, dateEnd]) 
-                    )
-                page = request.GET.get('page', 1)
-                paginator = Paginator(book_list, 5)
+    if request.method == 'GET':
+        if (len(request.GET) > 0):
+            print(request.GET)
+            title = request.GET.get('title')
+            authors = request.GET.get('authors')
+            language = request.GET.get('language')
+            isbnId = request.GET.get('isbnId')
+            pageCount = request.GET.get('pageCount')
+            dateStart = request.GET.get('dateStart')
+            dateEnd = request.GET.get('dateEnd')
+            exactDate = request.GET.get('exactDate')
+            if (request.GET.get("parameter") == '2'):
                 try:
-                    books = paginator.page(page)
-                except PageNotAnInteger:
-                    books = paginator.page(1)
-                except EmptyPage:
-                    books = paginator.page(paginator.num_pages)
+                    if(dateStart == "" and dateEnd == ""):
+                        book_list = Book.objects.filter(
+                            Q(title__exact=title) | 
+                            Q(authors__exact=authors) | 
+                            Q(language__exact=language) | 
+                            Q(isbnId__exact=isbnId) |
+                            Q(pageCount__exact=pageCount) | 
+                            Q(publishedDate__exact=exactDate)
+                        )
+                    elif(exactDate == ""):
+                        book_list = Book.objects.filter(
+                            Q(title__exact=title) | 
+                            Q(authors__exact=authors) | 
+                            Q(language__exact=language) | 
+                            Q(isbnId__exact=isbnId) |
+                            Q(pageCount__exact=pageCount) | 
+                            Q(publishedDate__range=[dateStart, dateEnd]) 
+                        )
+                    else:
+                        error = 'Use "Exact date" OR "Date from, Date to" for contants all field!'
+                        return render(request, 'book_advanced_searching.html', { 'error': error })
+                    page = request.GET.get('page', 1)
+                    paginator = Paginator(book_list, 5)
+                    try:
+                        books = paginator.page(page)
+                    except PageNotAnInteger:
+                        books = paginator.page(1)
+                    except EmptyPage:
+                        books = paginator.page(paginator.num_pages)
 
-                return render(request, 'book_search.html', { 'books': books })
-            except Exception as error:
-                return render(request, 'book_advanced_searching.html', {'error':error})
+                    return render(request, 'book_advanced_searching.html', { 'books': books })
+                except Exception as error:
+                    return render(request, 'book_advanced_searching.html', {'error':error})
+            elif(request.GET.get("parameter") == '1'):
+                if(exactDate == ""):
+                    exactDate = "1000-01-01"
+                if(pageCount == ""):
+                    pageCount = 0
+                try:
+                    if(dateStart == "" and dateEnd == ""):
+                        book_list = Book.objects.filter(
+                            Q(title__exact=title) | 
+                            Q(authors__exact=authors) | 
+                            Q(language__exact=language) | 
+                            Q(isbnId__exact=isbnId) |
+                            Q(pageCount__exact=pageCount) |
+                            Q(publishedDate__exact=exactDate)
+                        )
+                    elif(dateStart != "" and dateEnd == ""):
+                        book_list = Book.objects.filter(
+                            Q(title__icontains=title) | 
+                            Q(authors__icontains=authors) | 
+                            Q(language__icontains=language) | 
+                            Q(isbnId__icontains=isbnId) |
+                            Q(pageCount__icontains=pageCount) | 
+                            Q(publishedDate__icontains=exactDate) | 
+                            Q(publishedDate__range=[dateStart, datetime.datetime.now()]) 
+                        )
+                    elif(dateStart == "" and dateEnd != ""):
+                        book_list = Book.objects.filter(
+                            Q(title__icontains=title) | 
+                            Q(authors__icontains=authors) | 
+                            Q(language__icontains=language) | 
+                            Q(isbnId__icontains=isbnId) |
+                            Q(pageCount__icontains=pageCount) | 
+                            Q(publishedDate__icontains=exactDate) | 
+                            Q(publishedDate__range=["1000-01-01", dateEnd]) 
+                        )
+                    else:
+                        book_list = Book.objects.filter(
+                            Q(title__icontains=title) | 
+                            Q(authors__icontains=authors) | 
+                            Q(language__icontains=language) | 
+                            Q(isbnId__icontains=isbnId) |
+                            Q(pageCount__icontains=pageCount) | 
+                            Q(publishedDate__icontains=exactDate) | 
+                            Q(publishedDate__range=[dateStart, dateEnd]) 
+                        )
+                    
+                    page = request.GET.get('page', 1)
+                    paginator = Paginator(book_list, 5)
+                    try:
+                        books = paginator.page(page)
+                    except PageNotAnInteger:
+                        books = paginator.page(1)
+                    except EmptyPage:
+                        books = paginator.page(paginator.num_pages)
+
+                    if (book_list.exists() == False):
+                        nobooks = True
+                        return render(request, 'book_advanced_searching.html', { 'nobooks': nobooks, 'books':books })
+                    else:
+                        return render(request, 'book_advanced_searching.html', { 'books': books })
+                except Exception as error:
+                    return render(request, 'book_advanced_searching.html', {'error':error})
+            elif(request.GET.get("parameter") == '0'):
+                error = "Please choose Search parameter first!"
+                return render(request, 'book_advanced_searching.html', {'error': error})
         else:
-            return render(request, 'book_search.html')
+            return render(request, 'book_advanced_searching.html')
     else:
         return render(request, 'book_advanced_searching.html', {'error':"smth"})

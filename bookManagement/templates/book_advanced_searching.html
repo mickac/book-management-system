@@ -3,4 +3,16 @@
     {% block advancedsearch_form %}
         {% include 'items/forms/advancedsearch_form.html' %}
     {% endblock %}
+    <div class="container">
+        {% if books %}
+            <h3>Results:</h3>
+            {% block booklist_table %}
+                {% include 'items/tables/booklist_table.html'%}
+            {% endblock %}
+        {% endif %}
+        {% if nobooks %}
+            <h3>Results:</h3>
+                <p>There are no such books in the system.</p>
+        {% endif %}
+    </div>
 {% endblock %}
