@@ -1,15 +1,14 @@
 """
     TODO:
     - PEP8 Validation + Doing some modules for repeating methods
-    - Feed from Google API
+    - Feed from Google API (halfway done, accidentely reached API limits)
     - REST API
 """
 
 
 from django.core.exceptions import ValidationError
-from django.http import HttpResponse
-from django.http import request
-from django.shortcuts import render, redirect, get_object_or_404
+from django.http import HttpResponse, Http404, request, JsonResponse
+from django.shortcuts import render, get_object_or_404
 from django.core.paginator import(
     Paginator,
     EmptyPage,
@@ -17,8 +16,12 @@ from django.core.paginator import(
 )
 from django.db.models import Q
 
-from .forms import BookForm, AdvancedSearch
+from rest_framework import generics
+from django_filters.rest_framework import DjangoFilterBackend
+
+from .forms import BookForm
 from .models import Book
+from .serializers import BookSerializer
 
 import datetime
 
@@ -311,3 +314,54 @@ def book_advanced_searching(request):
             return render(request, 'book_advanced_searching.html')
     else:
         return render(request, 'book_advanced_searching.html')
+
+def feed_from_google(request):
+    if request.method == 'GET':
+        q = request.GET.get('q')
+        intitle = request.GET.get('title')
+        inauthor = request.GET.get('author')
+        inpublisher = request.GET.get('publisher')
+        subject = request.GET.get('subject')
+        isbn = request.GET.get('isbn')
+        lccn = request.GET.get('lccn')
+        oclc = request.GET.get('oclc')
+        searchdict = {}
+        for i in ('intitle', 'inauthor', 'inpublisher', 'subject', 'isbn', 'lccn', 'oclc'):
+            searchdict[i] = locals()[i]
+        query = ""
+        for x, y in searchdict.items():
+            if (x != "" and y != ""):
+                query = query + "+" + x + ":" + y
+        API_key = "AIzaSyC1HWQFQj8JxlVZV9oLv_GKHapcj5pPK2Q"
+        i = 0
+        API_url = "https://www.googleapis.com/books/v1/volumes?q=" + q + query + "&startIndex=" + str(i) + "&maxResults=40" + "&key=" + API_key 
+        if (q == ""):
+            API_url = API_url.replace("+","",1)
+        API_url = API_url.replace(" ","-")
+        #API_request = requests.get(API_url, headers={'Content-Type':'application/json'})
+        #data = API_request.json()
+        data = None
+        print(API_url)
+        iterr = 0
+        for i in data.get("items"):
+            title = i["volumeInfo"].get("title")
+            authors = i["volumeInfo"].get("authors")
+            publishedDate = i["volumeInfo"].get("publishedDate")
+            pageCount = i["volumeInfo"].get("pageCount")
+            #image = i["volumeInfo"]["imageLinks"].get("thumbnail")
+            language = i["volumeInfo"].get("language")
+            #isbnId = i["volumeInfo"]["indrustyIdentifier"]
+            iterr += iterr
+            print(iterr)
+            print(title,authors,publishedDate,pageCount,language)
+
+
+        return render(request, 'feed_from_google.html', {'API_url':API_url, 'counterResult': i})   
+    else:
+        return render(request, 'feed_from_google.html')     
+
+class BookList(generics.ListCreateAPIView):
+    queryset = Book.objects.all()
+    serializer_class = BookSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = '__all__'

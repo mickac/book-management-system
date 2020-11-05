@@ -11,6 +11,9 @@ gunicorn = "*"
 django-heroku = "*"
 django-widget-tweaks = "*"
 python-dotenv = "*"
+requests = "*"
+djangorestframework = "*"
+django-filter = "*"
 
 [requires]
 python_version = "3.8"
