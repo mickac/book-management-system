@@ -8,11 +8,6 @@
 from django.core.exceptions import ValidationError
 from django.http import HttpResponse, Http404, request, JsonResponse
 from django.shortcuts import render, get_object_or_404
-from django.core.paginator import(
-    Paginator,
-    EmptyPage,
-    PageNotAnInteger
-)
 from django.db.models import Q
 
 from rest_framework import generics
@@ -25,52 +20,47 @@ from .serializers import BookSerializer
 import datetime
 
 from .modules.paginator import paginator
+from .modules.validators import(
+    validate_dashes,
+    validate_isbn_len
+)
+from .modules.errors import(
+    generic_error,
+    isbn_validation_error
+)
+
 
 def index(request):
     return render(request, 'index.html')
 
+
 def book_add(request):
+    template = 'book_add.html'
     if request.method == 'POST':
         form = BookForm(request.POST)
         if form.is_valid():
             try:
                 isbnType = form.cleaned_data['isbnType']
                 isbnId = form.cleaned_data['isbnId']
-                bookTitle = form.cleaned_data['title']
-                #[1],[6],[11] - ISBN-10
-                #[3],[5],[10],[15] -ISBN-13
+                title = form.cleaned_data['title']
                 try:
-                    dashesValidation = True
-                    dashesValidationString = list(isbnId)
-                    dashCounter = dashesValidationString.count('-')
-                    if(isbnType == 'ISBN-10' and ((dashesValidationString[1] != '-' or dashesValidationString[6] != '-' or dashesValidationString[11] != '-') and dashCounter == 3)):
-                        dashesValidation = False
-                    if(isbnType == 'ISBN-13' and ((dashesValidationString[3] != '-' or dashesValidationString[5] != '-' or dashesValidationString[10] != '-' or dashesValidationString[15] != '-') and dashCounter == 4)):
-                        dashesValidation = False
-                    isbnId = isbnId.replace("-","")
-                except:
-                    error = "Wrong ISBN ID!"
-                    return render(request, 'book_add.html', {'e':error, 'form':form})
-
-                if(isbnType == 'ISBN-10' and (len(isbnId) != 10 or dashesValidation == False)):
-                    error = "Wrong ISBN ID for ISBN-10 type. Check ISBN ID and try again! (Length should be 10 without dashes or 13 with dashes)"
-                    return render(request, 'book_add.html', {'e':error, 'form':form})
-                elif(isbnType == 'ISBN-13' and len(isbnId) != 13 and dashesValidation == False):
-                    error = "Wrong ISBN ID for ISBN-13 type. Check ISBN ID and try again! (Length should be 13 without dashes or 17 with dashes)"
-                    return render(request, 'book_add.html', {'e':error, 'form':form})
-                else:
+                    validate_dashes(isbnType, isbnId)
+                    validate_isbn_len(isbnType, isbnId)
                     book = form.save(commit=False)
-                    book.isbnId = isbnId
+                    book.isbnId = isbnId.replace("-", "")
                     book.save()
-                    form = BookForm()
-                    return render(request, 'book_add.html', {'title':bookTitle, 'form':form})
+                    return render(request, template, {'title': title,
+                                                      'form': form})
+                except ValueError as exception:
+                    response = isbn_validation_error(request, template, form)
+                    return response
             except Exception as exception:
-                error = "Something went wrong. If error occurs often please send error message contained below to administator."
-                error_message = str(exception)
-                return render(request, 'error.html', {'em':error_message, 'e':error})
+                response = generic_error(request, exception)
+                return response
     else:
         form = BookForm()
-    return render(request, 'book_add.html', {'form':form})            
+    return render(request, template, {'form': form})
+
 
 def book_list(request):
     try:
@@ -78,11 +68,43 @@ def book_list(request):
         page = request.GET.get('page', 1)
         pageSize = 5
         books = paginator(book_list, page, pageSize)
-        return render(request, 'book_list.html', { 'books': books })
+        return render(request, 'book_list.html', {'books': books})
     except Exception as exception:
-        error = "Something went wrong. If error occurs often please send error message contained below to administator."
+        error = """Something went wrong.
+                If error occurs often please send error
+                message contained below to administator."""
         error_message = str(exception)
-        return render(request, 'error.html', {'em':error_message, 'e':error})
+        return render(request, 'error.html', {'em': error_message, 'e': error})
+
+
+def book_edit(request, pk):
+    try:
+        template = 'book_edit.html'
+        book = get_object_or_404(Book, pk=pk)
+        if request.method == "POST":
+            form = BookForm(request.POST, instance=book)
+            if form.is_valid():
+                isbnType = form.cleaned_data['isbnType']
+                isbnId = form.cleaned_data['isbnId']
+                title = form.cleaned_data['title']
+                try:
+                    validate_dashes(isbnType, isbnId)
+                    validate_isbn_len(isbnType, isbnId)
+                except ValueError:
+                    response = isbn_validation_error(request, template, form)
+                    return response
+                book = form.save(commit=False)
+                book.isbnId = isbnId.replace("-", "")
+                book.save()
+                return render(request, template, {'title': title,
+                                                  'form': form})
+        else:
+            form = BookForm(instance=book)
+        return render(request, template, {'form': form})
+    except Exception as exception:
+        response = generic_error(request, exception)
+        return response
+
 
 def book_search(request):
         try:
@@ -134,46 +156,6 @@ def book_search(request):
             error_message = str(exception)
             return render(request, 'error.html', {'em':error_message, 'e':error})
 
-def book_edit(request, pk):
-    try:
-        book = get_object_or_404(Book, pk=pk)
-        if request.method == "POST":
-            form = BookForm(request.POST, instance=book)
-            if form.is_valid():
-                isbnType = form.cleaned_data['isbnType']
-                isbnId = form.cleaned_data['isbnId']
-                bookTitle = form.cleaned_data['title']
-                try:
-                    dashesValidation = True
-                    dashesValidationString = list(isbnId)
-                    dashCounter = dashesValidationString.count('-')
-                    if(isbnType == 'ISBN-10' and ((dashesValidationString[1] != '-' or dashesValidationString[6] != '-' or dashesValidationString[11] != '-') and dashCounter == 3)):
-                        dashesValidation = False
-                    if(isbnType == 'ISBN-13' and ((dashesValidationString[3] != '-' or dashesValidationString[5] != '-' or dashesValidationString[10] != '-' or dashesValidationString[15] != '-') and dashCounter == 4)):
-                        dashesValidation = False
-                    isbnId = isbnId.replace("-","")
-                except:
-                    error = "Wrong ISBN ID!"
-                    return render(request, 'book_edit.html', {'e':error, 'form':form})
-
-                if(isbnType == 'ISBN-10' and (len(isbnId) != 10 or dashesValidation == False)):
-                    error = "Wrong ISBN ID for ISBN-10 type. Check ISBN ID and try again! (Length should be 10 without dashes or 13 with dashes)"
-                    return render(request, 'book_edit.html', {'e':error, 'form':form})
-                elif(isbnType == 'ISBN-13' and len(isbnId) != 13 and dashesValidation == False):
-                    error = "Wrong ISBN ID for ISBN-13 type. Check ISBN ID and try again! (Length should be 13 without dashes or 17 with dashes)"
-                    return render(request, 'book_edit.html', {'e':error, 'form':form})
-                else:
-                    book = form.save(commit=False)
-                    book.isbnId = isbnId
-                    book.save()
-                    return render(request, 'book_edit.html', {'title':bookTitle, 'form':form})
-        else:
-            form = BookForm(instance=book)
-        return render(request, 'book_edit.html', {'form':form}) 
-    except Exception as exception:
-        error = "Something went wrong. If error occurs often please send error message contained below to administator."
-        error_message = str(exception)
-        return render(request, 'error.html', {'em':error_message, 'e':error})
 
 def book_advanced_searching(request):
     if request.method == 'GET':
@@ -308,9 +290,8 @@ def feed_from_google(request):
         for x, y in searchdict.items():
             if (x != "" and y != ""):
                 query = query + "+" + x + ":" + y
-        API_key = "AIzaSyC1HWQFQj8JxlVZV9oLv_GKHapcj5pPK2Q"
         i = 0
-        API_url = "https://www.googleapis.com/books/v1/volumes?q=" + q + query + "&startIndex=" + str(i) + "&maxResults=40" + "&key=" + API_key 
+        API_url = "https://www.googleapis.com/books/v1/volumes?q=" + q + query + "&startIndex=" + str(i) + "&maxResults=40" + "&key="
         if (q == ""):
             API_url = API_url.replace("+","",1)
         API_url = API_url.replace(" ","-")
