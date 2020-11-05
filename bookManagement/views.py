@@ -26,7 +26,8 @@ from .modules.validators import(
 )
 from .modules.errors import(
     generic_error,
-    isbn_validation_error
+    isbn_validation_error,
+    date_error
 )
 
 
@@ -46,35 +47,31 @@ def book_add(request):
                 try:
                     validate_dashes(isbnType, isbnId)
                     validate_isbn_len(isbnType, isbnId)
+                except ValueError as exception:
+                    return isbn_validation_error(request, template, form)
+                else:
                     book = form.save(commit=False)
                     book.isbnId = isbnId.replace("-", "")
                     book.save()
                     return render(request, template, {'title': title,
                                                       'form': form})
-                except ValueError as exception:
-                    response = isbn_validation_error(request, template, form)
-                    return response
             except Exception as exception:
-                response = generic_error(request, exception)
-                return response
+                return generic_error(request, exception)
     else:
         form = BookForm()
     return render(request, template, {'form': form})
 
 
 def book_list(request):
+    template = 'book_list.html'
     try:
         book_list = Book.objects.all()
         page = request.GET.get('page', 1)
         pageSize = 5
         books = paginator(book_list, page, pageSize)
-        return render(request, 'book_list.html', {'books': books})
+        return render(request, template, {'books': books})
     except Exception as exception:
-        error = """Something went wrong.
-                If error occurs often please send error
-                message contained below to administator."""
-        error_message = str(exception)
-        return render(request, 'error.html', {'em': error_message, 'e': error})
+        return generic_error(request, exception)
 
 
 def book_edit(request, pk):
@@ -91,187 +88,127 @@ def book_edit(request, pk):
                     validate_dashes(isbnType, isbnId)
                     validate_isbn_len(isbnType, isbnId)
                 except ValueError:
-                    response = isbn_validation_error(request, template, form)
-                    return response
-                book = form.save(commit=False)
-                book.isbnId = isbnId.replace("-", "")
-                book.save()
-                return render(request, template, {'title': title,
-                                                  'form': form})
+                    return isbn_validation_error(request, template, form)
+                else:
+                    book = form.save(commit=False)
+                    book.isbnId = isbnId.replace("-", "")
+                    book.save()
+                    return render(request, template, {'title': title,
+                                                      'form': form})
         else:
             form = BookForm(instance=book)
         return render(request, template, {'form': form})
+    except Exception as exception:
+        return generic_error(request, exception)
+
+
+def book_search(request):
+    try:
+        template = 'book_search.html'
+        keyword = word = request.GET.get('keyword')
+        parameter = request.GET.get('parameter')
+        if (parameter == 'publishedDate'):
+            try:
+                word = word.split()
+                if (len(word) == 3):
+                    word.remove('to')
+                    dateStart = datetime.date.fromisoformat(word[0])
+                    dateEnd = datetime.date.fromisoformat(word[1])
+                    word.clear()
+                    word.extend([str(dateStart), str(dateEnd)])
+                    searchword = parameter + "__range"
+                elif(len(word) == 1):
+                    word = datetime.date.fromisoformat(word[0])
+                    searchword = parameter + "__icontains"
+                else:
+                    raise ValueError
+            except ValueError:
+                return date_error(request, template)
+        else:
+            searchword = parameter + "__icontains"
+        book_list = Book.objects.filter(
+            Q(**{searchword: word})
+        )
+        page = request.GET.get('page', 1)
+        pageSize = 5
+        books = paginator(book_list, page, pageSize)
+        return render(request, template, {'books': books,
+                                          'keyword': keyword,
+                                          'parameter': parameter})
     except Exception as exception:
         response = generic_error(request, exception)
         return response
 
 
-def book_search(request):
-        try:
-            keyword = request.GET.get('keyword')
+def book_advanced_searching(request):
+    template = 'book_advanced_searching.html'
+    if request.method == 'GET':
+        if (len(request.GET) > 0):
             parameter = request.GET.get('parameter')
-            if (parameter == 'title'):
-                book_list = Book.objects.filter(
-                    Q(title__icontains=keyword)
-                )
-            elif (parameter == 'authors'):
-                book_list = Book.objects.filter(
-                    Q(authors__icontains=keyword)
-                )
-            elif (parameter == 'language'):
-                book_list = Book.objects.filter(
-                    Q(language__icontains=keyword)
-                )
-            elif (parameter == 'publishedDate'):
-                format = "%Y-%m-%d"
-                try:
-                    keyword = keyword.split()
-                    if (len(keyword) == 3):
-                        keyword.remove('to')
-                        dateStart = datetime.datetime.strptime(keyword[0], format)
-                        dateEnd = datetime.datetime.strptime(keyword[1], format)
-                        book_list = Book.objects.filter(
-                            Q(publishedDate__range=[dateStart, dateEnd])
-                        )
-                    elif(len(keyword) == 1):
-                        date = datetime.datetime.strptime(keyword[0], format)
-                        book_list = Book.objects.filter(
-                            Q(publishedDate__icontains=date)
-                        )
-                    else:
-                        raise ValueError
-                except ValueError:
-                    error = "There is something wrong with date range you have passed. For additional information about search functionality, click question mark near search field. If error still occures contact the administrator."
-                    return render(request, 'book_search.html', { 'error':error })
-            else:
-                error = "Please choose parameter first!"
-                return render(request, 'book_search.html', { 'error':error })
-            
+            dateStart = request.GET.get('dateStart')
+            dateEnd = request.GET.get('dateEnd')
+            searchdict = request.GET.copy()
+            searchdict.pop("exactDate")
+            searchdict.pop("parameter")
+            searchdict["publishedDate"] = request.GET.get('exactDate')
+            advanced_filter = Q()
+            if(parameter == '1'):
+                if("page" in searchdict):
+                    searchdict.pop("page")
+                if(not searchdict.get("publishedDate")):
+                    searchdict["publishedDate"] = "1000-01-01"
+                if(not searchdict.get("pageCount")):
+                    searchdict["pageCount"] = 0
+                if(not searchdict["dateStart"] and not searchdict["dateEnd"]):
+                    searchdict.pop("dateStart")
+                    searchdict.pop("dateEnd")
+                elif(searchdict["dateStart"] and not searchdict["dateEnd"]):
+                    searchdict["dateEnd"] = datetime.datetime.now()
+                elif(not searchdict["dateStart"] and searchdict["dateEnd"]):
+                    searchdict["dateStart"] = "1000-01-01"
+                for searchword in searchdict:
+                    advanced_filter |= Q(**{searchword:searchdict[searchword]})
+            elif (parameter == '2'):
+                emptyFieldsCounter = list(filter(lambda x: x == '',(list(searchdict.values())))).count('')
+                if(not searchdict["dateStart"] and not searchdict["dateEnd"] and emptyFieldsCounter == 2):
+                    searchdict.pop("dateStart")
+                    searchdict.pop("dateEnd")
+                elif(not searchdict["publishedDate"] and emptyFieldsCounter == 1):
+                    searchdict.pop("publishedDate")
+                    searchdict.pop("dateStart")
+                    searchdict.pop("dateEnd")
+                    searchdict["publishedDate__range"] = [str(dateStart), str(dateEnd)]
+                elif(emptyFieldsCounter > 2):
+                    error = 'You are missing some field(s). Please fill them!'
+                    return render(request, template, {'error': error})
+                else:
+                    error = 'Use "Exact date" OR "Date from, Date to" for contains all field!'
+                    return render(request, template, {'error': error})
+                for searchword in searchdict:
+                    advanced_filter &= Q(**{searchword:searchdict[searchword]})   
+            book_list = Book.objects.filter(advanced_filter)
             page = request.GET.get('page', 1)
             pageSize = 5
             books = paginator(book_list, page, pageSize)
-            return render(request, 'book_search.html', { 'books': books, 'keyword':keyword, 'parameter':parameter }) 
-        except Exception as exception:
-            error = "Something went wrong. If error occurs often please send error message contained below to administator."
-            error_message = str(exception)
-            return render(request, 'error.html', {'em':error_message, 'e':error})
-
-
-def book_advanced_searching(request):
-    if request.method == 'GET':
-        if (len(request.GET) > 0):
-            parameter = request.GET.get("parameter")
-            title = request.GET.get('title')
-            authors = request.GET.get('authors')
-            language = request.GET.get('language')
-            isbnId = request.GET.get('isbnId')
-            pageCount = request.GET.get('pageCount')
-            dateStart = request.GET.get('dateStart')
-            dateEnd = request.GET.get('dateEnd')
-            exactDate = request.GET.get('exactDate')
-
-            if (parameter == '2'):
-                dict = request.GET
-                result = list(filter(lambda x: x == '',(list(dict.values()))))
-                emptyFieldsCounter = result.count('')
-                try:
-                    if(dateStart == "" and dateEnd == "" and emptyFieldsCounter == 2):
-                        book_list = Book.objects.filter(
-                            Q(title__exact=title) & 
-                            Q(authors__exact=authors) & 
-                            Q(language__exact=language) & 
-                            Q(isbnId__exact=isbnId) &
-                            Q(pageCount__exact=pageCount) & 
-                            Q(publishedDate__exact=exactDate)
-                        )
-                    elif(exactDate == "" and emptyFieldsCounter == 1):
-                        book_list = Book.objects.filter(
-                            Q(title__exact=title) &
-                            Q(authors__exact=authors) & 
-                            Q(language__exact=language) & 
-                            Q(isbnId__exact=isbnId) &
-                            Q(pageCount__exact=pageCount) & 
-                            Q(publishedDate__range=[dateStart, dateEnd]) 
-                        )
-                    elif(emptyFieldsCounter > 2):
-                        error = 'You are missing some field(s). Please fill them!'
-                        return render(request, 'book_advanced_searching.html', { 'error': error })
-                    else:
-                        error = 'Use "Exact date" OR "Date from, Date to" for contains all field!'
-                        return render(request, 'book_advanced_searching.html', { 'error': error })
-                        
-                    page = request.GET.get('page', 1)
-                    pageSize = 5
-                    books = paginator(book_list, page, pageSize)
-                    if (book_list.exists() == False):
-                        nobooks = True
-                        return render(request, 'book_advanced_searching.html', { 'nobooks': nobooks, 'books':books })
-                    return render(request, 'book_advanced_searching.html', { 'books': books })
-                except Exception as error:
-                    return render(request, 'book_advanced_searching.html', {'error':error})
-            elif(parameter == '1'):
-                if(exactDate == ""):
-                    exactDate = "1000-01-01"
-                if(pageCount == ""):
-                    pageCount = 0
-                try:
-                    if(dateStart == "" and dateEnd == ""):
-                        book_list = Book.objects.filter(
-                            Q(title__exact=title) | 
-                            Q(authors__exact=authors) | 
-                            Q(language__exact=language) | 
-                            Q(isbnId__exact=isbnId) |
-                            Q(pageCount__exact=pageCount) |
-                            Q(publishedDate__exact=exactDate)
-                        )
-                    elif(dateStart != "" and dateEnd == ""):
-                        book_list = Book.objects.filter(
-                            Q(title__icontains=title) | 
-                            Q(authors__icontains=authors) | 
-                            Q(language__icontains=language) | 
-                            Q(isbnId__icontains=isbnId) |
-                            Q(pageCount__icontains=pageCount) | 
-                            Q(publishedDate__icontains=exactDate) | 
-                            Q(publishedDate__range=[dateStart, datetime.datetime.now()]) 
-                        )
-                    elif(dateStart == "" and dateEnd != ""):
-                        book_list = Book.objects.filter(
-                            Q(title__icontains=title) | 
-                            Q(authors__icontains=authors) | 
-                            Q(language__icontains=language) | 
-                            Q(isbnId__icontains=isbnId) |
-                            Q(pageCount__icontains=pageCount) | 
-                            Q(publishedDate__icontains=exactDate) | 
-                            Q(publishedDate__range=["1000-01-01", dateEnd]) 
-                        )
-                    else:
-                        book_list = Book.objects.filter(
-                            Q(title__icontains=title) | 
-                            Q(authors__icontains=authors) | 
-                            Q(language__icontains=language) | 
-                            Q(isbnId__icontains=isbnId) |
-                            Q(pageCount__icontains=pageCount) | 
-                            Q(publishedDate__icontains=exactDate) | 
-                            Q(publishedDate__range=[dateStart, dateEnd]) 
-                        )
-                    
-                    page = request.GET.get('page', 1)
-                    pageSize = 5
-                    books = paginator(book_list, page, pageSize)
-                    if (book_list.exists() == False):
-                        nobooks = True
-                        return render(request, 'book_advanced_searching.html', { 'nobooks': nobooks, 'books':books })
-                    else:
-                        return render(request, 'book_advanced_searching.html', { 'books': books, 'parameter':parameter, 'title':title, 'authors':authors, 'language':language, 'isbnId':isbnId, 'pageCount':pageCount, 'dateStart':dateStart, dateEnd:'dateEnd', 'exactDate':exactDate })
-                except Exception as error:
-                    return render(request, 'book_advanced_searching.html', {'error':error})
-            elif(parameter == '0'):
-                error = "Please choose Search parameter first!"
-                return render(request, 'book_advanced_searching.html', {'error': error})
+            if (book_list.exists() == False):
+                nobooks = True
+                return render(request, template, { 'nobooks': nobooks,
+                                                    'books': books})
+            else:
+                return render(request, template, { 'books': books,
+                                                   'parameter':parameter,
+                                                   'title': searchdict["title"],
+                                                   'authors': searchdict["authors"],
+                                                   'language': searchdict["language"],
+                                                   'isbnId': searchdict["isbnId"],
+                                                   'pageCount': searchdict["pageCount"],
+                                                   'dateStart':dateStart,
+                                                   'dateEnd': dateEnd, 
+                                                   'exactDate': searchdict["publishedDate"]})
         else:
-            return render(request, 'book_advanced_searching.html')
+            return render(request, template)
     else:
-        return render(request, 'book_advanced_searching.html')
+        return render(request, template)
 
 def feed_from_google(request):
     if request.method == 'GET':
