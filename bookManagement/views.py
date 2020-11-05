@@ -1,9 +1,11 @@
-"""
-    TODO:
+"""TODO:
     - PEP8 Validation + Doing some modules for repeating methods
     - Feed from Google API (halfway done, accidentely reached API limits)
 """
 
+import datetime
+import requests
+import re
 
 from django.core.exceptions import ValidationError
 from django.http import HttpResponse, Http404, request, JsonResponse
@@ -16,9 +18,6 @@ from django_filters.rest_framework import DjangoFilterBackend
 from .forms import BookForm
 from .models import Book
 from .serializers import BookSerializer
-
-import datetime
-
 from .modules.paginator import paginator
 from .modules.validators import(
     validate_dashes,
@@ -29,6 +28,13 @@ from .modules.errors import(
     isbn_validation_error,
     date_error
 )
+from .modules.keys import GoogleApiKey
+
+class BookList(generics.ListCreateAPIView):
+    queryset = Book.objects.all()
+    serializer_class = BookSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = '__all__'
 
 
 def index(request):
@@ -110,14 +116,14 @@ def book_search(request):
         if (parameter == 'publishedDate'):
             try:
                 word = word.split()
-                if (len(word) == 3):
+                if len(word) == 3:
                     word.remove('to')
                     dateStart = datetime.date.fromisoformat(word[0])
                     dateEnd = datetime.date.fromisoformat(word[1])
                     word.clear()
                     word.extend([str(dateStart), str(dateEnd)])
                     searchword = parameter + "__range"
-                elif(len(word) == 1):
+                elif len(word) == 1:
                     word = datetime.date.fromisoformat(word[0])
                     searchword = parameter + "__icontains"
                 else:
@@ -210,52 +216,76 @@ def book_advanced_searching(request):
     else:
         return render(request, template)
 
+
 def feed_from_google(request):
-    if request.method == 'GET':
-        q = request.GET.get('q')
-        intitle = request.GET.get('title')
-        inauthor = request.GET.get('author')
-        inpublisher = request.GET.get('publisher')
-        subject = request.GET.get('subject')
-        isbn = request.GET.get('isbn')
-        lccn = request.GET.get('lccn')
-        oclc = request.GET.get('oclc')
-        searchdict = {}
-        for i in ('intitle', 'inauthor', 'inpublisher', 'subject', 'isbn', 'lccn', 'oclc'):
-            searchdict[i] = locals()[i]
+    template = 'feed_from_google.html'
+    resultNumbers = request.GET.get("resultNumbers")
+    if request.method == 'GET' and resultNumbers:
+        #itemsNumber = request.get("itemsNumber")
+        searchdict = request.GET.copy()
+        q = request.GET.get("q")
+        if("q" in searchdict):
+            searchdict.pop("q")
+        searchdict.pop("resultNumbers")    
+        #searchdict.pop("itemsNumber")
         query = ""
+        APIKey = GoogleApiKey()
         for x, y in searchdict.items():
-            if (x != "" and y != ""):
+            if x and y:
                 query = query + "+" + x + ":" + y
-        i = 0
-        API_url = "https://www.googleapis.com/books/v1/volumes?q=" + q + query + "&startIndex=" + str(i) + "&maxResults=40" + "&key="
+        query = q + query + "&maxResults=" + resultNumbers + "&key=" + APIKey
+        if query:
+            API_url = "https://www.googleapis.com/books/v1/volumes?q=" + query
         if (q == ""):
-            API_url = API_url.replace("+","",1)
-        API_url = API_url.replace(" ","-")
-        #API_request = requests.get(API_url, headers={'Content-Type':'application/json'})
-        #data = API_request.json()
-        data = None
+            API_url = API_url.replace("+", "", 1)
+        API_url = API_url.replace(" ", "-")
+        API_request = requests.get(API_url, headers={'Content-Type':'application/json'})
+        data = API_request.json()
+        addIter = 0
+        isbn = isbnType = ""
+        noItems = False
         print(API_url)
-        iterr = 0
-        for i in data.get("items"):
-            title = i["volumeInfo"].get("title")
-            authors = i["volumeInfo"].get("authors")
-            publishedDate = i["volumeInfo"].get("publishedDate")
-            pageCount = i["volumeInfo"].get("pageCount")
-            #image = i["volumeInfo"]["imageLinks"].get("thumbnail")
-            language = i["volumeInfo"].get("language")
-            #isbnId = i["volumeInfo"]["indrustyIdentifier"]
-            iterr += iterr
-            print(iterr)
-            print(title,authors,publishedDate,pageCount,language)
-
-
-        return render(request, 'feed_from_google.html', {'API_url':API_url, 'counterResult': i})   
+        if data.get("items"):
+            for i in data.get("items"):
+                title = i["volumeInfo"].get("title")
+                authors = i["volumeInfo"].get("authors")
+                publishedDate = i["volumeInfo"].get("publishedDate")
+                if publishedDate and not re.findall("^\d\d\d\d[- /.]\d\d[- /.]\d\d$", publishedDate):
+                    publishedDate = publishedDate + '-01-01'
+                isbnId = i["volumeInfo"].get("industryIdentifiers")
+                pageCount = i["volumeInfo"].get("pageCount")
+                image = i["volumeInfo"].get("imageLinks")                    
+                language = i["volumeInfo"].get("language")
+                if title and authors and image and publishedDate and isbnId and pageCount and image and language:
+                    if len(authors) > 1:
+                        authors = ', '.join(authors)
+                    else:
+                        authors = authors[0]
+                    image = image.get("thumbnail")
+                    for j in isbnId:
+                        if j["type"] == "ISBN_13":
+                            isbn = j.get("identifier")
+                            isbnType = "ISBN-13"
+                        if j["type"] == "ISBN_10" and isbnType != "ISBN-13":
+                            isbn = j.get("identifier")
+                            isbnType = "ISBN-10"
+                    if isbn:
+                        book = Book(
+                            title = title,
+                            authors = authors,
+                            publishedDate = publishedDate,
+                            isbnType = isbnType,
+                            isbnId = isbn,
+                            pageCount = pageCount,
+                            image = image,  
+                            language = language
+                        )
+                        try:
+                            book.save()
+                            addIter += 1
+                            noItems = False
+                        except:
+                            pass
+        return render(request, template, {'addIter': addIter,'noItems': noItems})   
     else:
-        return render(request, 'feed_from_google.html')     
-
-class BookList(generics.ListCreateAPIView):
-    queryset = Book.objects.all()
-    serializer_class = BookSerializer
-    filter_backends = [DjangoFilterBackend]
-    filterset_fields = '__all__'
+        return render(request, template)
