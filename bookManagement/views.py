@@ -2,7 +2,6 @@
     TODO:
     - PEP8 Validation + Doing some modules for repeating methods
     - Feed from Google API (halfway done, accidentely reached API limits)
-    - REST API
 """
 
 
