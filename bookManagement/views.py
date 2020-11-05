@@ -25,6 +25,8 @@ from .serializers import BookSerializer
 
 import datetime
 
+from .modules.paginator import paginator
+
 def index(request):
     return render(request, 'index.html')
 
@@ -75,15 +77,8 @@ def book_list(request):
     try:
         book_list = Book.objects.all()
         page = request.GET.get('page', 1)
-
-        paginator = Paginator(book_list, 5)
-        try:
-            books = paginator.page(page)
-        except PageNotAnInteger:
-            books = paginator.page(1)
-        except EmptyPage:
-            books = paginator.page(paginator.num_pages)
-
+        pageSize = 5
+        books = paginator(book_list, page, pageSize)
         return render(request, 'book_list.html', { 'books': books })
     except Exception as exception:
         error = "Something went wrong. If error occurs often please send error message contained below to administator."
@@ -132,15 +127,8 @@ def book_search(request):
                 return render(request, 'book_search.html', { 'error':error })
             
             page = request.GET.get('page', 1)
-            paginator = Paginator(book_list, 5)
-
-            try:
-                books = paginator.page(page)
-            except PageNotAnInteger:
-                books = paginator.page(1)
-            except EmptyPage:
-                books = paginator.page(paginator.num_pages)
-
+            pageSize = 5
+            books = paginator(book_list, page, pageSize)
             return render(request, 'book_search.html', { 'books': books, 'keyword':keyword, 'parameter':parameter }) 
         except Exception as exception:
             error = "Something went wrong. If error occurs often please send error message contained below to administator."
@@ -230,15 +218,10 @@ def book_advanced_searching(request):
                     else:
                         error = 'Use "Exact date" OR "Date from, Date to" for contains all field!'
                         return render(request, 'book_advanced_searching.html', { 'error': error })
+                        
                     page = request.GET.get('page', 1)
-                    paginator = Paginator(book_list, 5)
-                    try:
-                        books = paginator.page(page)
-                    except PageNotAnInteger:
-                        books = paginator.page(1)
-                    except EmptyPage:
-                        books = paginator.page(paginator.num_pages)
-
+                    pageSize = 5
+                    books = paginator(book_list, page, pageSize)
                     if (book_list.exists() == False):
                         nobooks = True
                         return render(request, 'book_advanced_searching.html', { 'nobooks': nobooks, 'books':books })
@@ -292,14 +275,8 @@ def book_advanced_searching(request):
                         )
                     
                     page = request.GET.get('page', 1)
-                    paginator = Paginator(book_list, 5)
-                    try:
-                        books = paginator.page(page)
-                    except PageNotAnInteger:
-                        books = paginator.page(1)
-                    except EmptyPage:
-                        books = paginator.page(paginator.num_pages)
-
+                    pageSize = 5
+                    books = paginator(book_list, page, pageSize)
                     if (book_list.exists() == False):
                         nobooks = True
                         return render(request, 'book_advanced_searching.html', { 'nobooks': nobooks, 'books':books })
