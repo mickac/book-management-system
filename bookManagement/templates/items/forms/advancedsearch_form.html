@@ -10,48 +10,42 @@
         <div class="row">
             <div class="form-group col-md-4">
                 <label for="titleLabel">Title</label>
-                <input type="text" class="form-control" name="title" placeholder="Write down title of the book">
+                <input type="text" class="form-control" name="title" id="title" placeholder="Write down title of the book">
             </div>
             <div class="form-group col-md-4">
                 <label for="authorsLabel">Author(s)</label>
-                <input type="text" class="form-control" name="authors" placeholder="Write down author(s) of the book">
+                <input type="text" class="form-control" name="authors" id="authors" placeholder="Write down author(s) of the book">
             </div>
             <div class="form-group col-md-4">
                 <label for="languageLabel">Language</label>
-                <input type="text" class="form-control" name="language" placeholder="Write down language of the book">
+                <input type="text" class="form-control" name="language" id="language" placeholder="Write down language of the book">
             </div>
         </div>
         <div class="row">
             <div class="form-group col-md-4">
                 <label for="isbnIdLabel">ISBN ID</label>
-                <input type="text" class="form-control" name="isbnId" placeholder="Write down ISBN ID of the book">
+                <input type="text" class="form-control" name="isbnId" id="isbnId" placeholder="Write down ISBN ID of the book">
             </div>
             <div class="form-group col-md-4">
                 <label for="pageCountLabel">Number of pages</label>
-                <input type="text" class="form-control" name="pageCount" placeholder="Write down pages number of the book">
+                <input type="number" min="0" value="0" class="form-control" name="pageCount" id="pageCount" placeholder="Write down pages number of the book">
             </div>
-            <div class="form-group col-md-4" id="exactDate">
+            <div class="form-group col-md-4" id="exactDateDiv">
                 <label for="exactDateLabel">Exact date</label>
-                <input type="date" class="form-control" name="exactDate" placeholder="Use yyyy-mm-dd format.">
+                <input type="date" class="form-control" name="exactDate" id="exactDate" placeholder="Use yyyy-mm-dd format.">
             </div>
         </div>
         <div class="d-flex justify-content-center">
             <div class="col text-right">
-            <div class="form-group float-right" id="dateStart">
+            <div class="form-group float-right" id="dateStartDiv">
                 <label for="dateStartLabel">Date from</label>
-                <input type="date" class="form-control text-right" name="dateStart" placeholder="Start date" style="width:auto;">
-                <small id="dateStartHelpBlock" class="form-text text-muted">
-                    Use yyyy-mm-dd format.
-                </small>
+                <input type="date" class="form-control text-right" name="dateStart" id="dateStart" placeholder="Start date" style="width:auto;">
             </div>
             </div>
             <div class="col text-left">
-            <div class="form-group" id="dateEnd">
+            <div class="form-group" id="dateEndDiv">
                 <label for="dateEndLabel">Date to</label>
-                <input type="date" class="form-control" name="dateEnd" placeholder="End date" style="width:auto;">
-                <small id="dateEndHelpBlock" class="form-text text-muted">
-                    Use yyyy-mm-dd format.
-                </small>
+                <input type="date" class="form-control" name="dateEnd" id="dateEnd" placeholder="End date" style="width:auto;">
             </div>
             </div>
         </div>
@@ -66,12 +60,12 @@
             <div class="col text-left">
                 <div class="form-group">
                     <select class="browser-default custom-select" style="width:auto;" name="parameter" id="parameter" required>
-                        <option value="0">Search parameter</option>
+                        <option value="">Search parameter</option>
                         <option value="1">Contains any field</option>
                         <option value="2">Contains all fields</option>
                     </select>
                     <select class="browser-default custom-select" style="width:auto;" name="dateParameter" id="dateParameter">
-                        <option value="0">Date parameter</option>
+                        <option value="">Date parameter</option>
                         <option value="1">Date range</option>
                         <option value="2">Date exact</option>
                     </select>
@@ -86,31 +80,62 @@
     	var id = this.value;
         if (id == "2"){        
             $('#dateParameter').show();
+            $('#title').prop("required", true);
+            $('#authors').prop("required", true);
+            $('#language').prop("required", true);
+            $('#isbnId').prop("required", true);
+            $('#pageCount').prop("required", true);
             $('#dateParameter').prop("required", true);
             $('#dateParameter').change(function() {
                 var id =this.value;
-                if (id == "0"){
-                    $('#exactDate').show();
-                    $('#dateStart').show();
-                    $('#dateEnd').show();                   
-                }
-                if (id == "1"){ 
-                    $('#exactDate').hide();
-                    $('#dateStart').show();
-                    $('#dateEnd').show();
-                }
-                if (id == "2"){ 
-                    $('#exactDate').show();
-                    $('#dateStart').hide();
-                    $('#dateEnd').hide();
-                }
-            });
+                if (id == "1"){
+                    $('#exactDateDiv').prop("required", false);
+                    $('#dateStartDiv').prop("required", true);
+                    $('#dateEndDiv').prop("required", true);    
+                } 
+                if (id == "2"){
+                    $('#exactDateDiv').prop("required", true);
+                    $('#dateStartDiv').prop("required", false);
+                    $('#dateEndDiv').prop("required", false);    
+                }       
+                if (id == ""){
+                    $('#exactDateDiv').prop("required", false);
+                    $('#dateStartDiv').prop("required", false);
+                    $('#dateEndDiv').prop("required", false);    
+                }    
+            });          
         }else{
             $('#dateParameter').hide();
+            $('#title').prop("required", false);
+            $('#authors').prop("required", false);
+            $('#language').prop("required", false);
+            $('#isbnId').prop("required", false);
+            $('#pageCount').prop("required", false);
+            $('#exactDateDiv').prop("required", false);
+            $('#dateStartDiv').prop("required", false);
+            $('#dateEndDiv').prop("required", false);    
             $('#dateParameter').prop("required", false);
-            $('#exactDate').show();
-            $('#dateStart').show();
-            $('#dateEnd').show();  
+            $('#exactDateDiv').show();
+            $('#dateStartDiv').show();
+            $('#dateEndDiv').show();  
         }
+    $('#dateParameter').change(function() {
+        var id =this.value;
+        if (id == ""){
+            $('#exactDateDiv').show();
+            $('#dateStartDiv').show();
+            $('#dateEndDiv').show();                   
+        }
+        if (id == "1"){ 
+            $('#exactDateDiv').hide();
+            $('#dateStartDiv').show();
+            $('#dateEndDiv').show();
+        }
+        if (id == "2"){ 
+            $('#exactDateDiv').show();
+            $('#dateStartDiv').hide();
+            $('#dateEndDiv').hide();
+        }
+    });
     });
 </script>

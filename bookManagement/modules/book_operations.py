@@ -30,6 +30,9 @@ class BookOperations:
         """Preparing data for simple search."""
         parameter = request.GET.get('parameter')
         if parameter == 'dateRange':
+            if request.GET.get('dateFrom') > request.GET.get('dateTo'):
+                print("siema")
+                raise TypeError
             targetword = [str(request.GET.get('dateFrom')),
                           str(request.GET.get('dateTo'))]
             searchword = "publishedDate__range"
@@ -44,47 +47,57 @@ class BookOperations:
         )
         return filtered_list
 
-    def advanced_search(request, template):
-        parameter = request.GET.get('parameter')
-        dateStart = request.GET.get('dateStart')
-        dateEnd = request.GET.get('dateEnd')
+    def advanced_search(request):
         searchdict = request.GET.copy()
-        searchdict.pop("exactDate")
-        searchdict.pop("parameter")
         searchdict["publishedDate"] = request.GET.get('exactDate')
+        searchdict.pop("exactDate")
         advanced_filter = Q()
-        if(parameter == '1'):
-            if("page" in searchdict):
+        if searchdict["parameter"] == '1':
+            """ If user choose "Contain any fields" algoritm do following things:
+                1. Deleting "page" and "date parameter" from dictionary so advanced_filter
+                    doesn't check those keys and values in DB (causing errors).
+                2. If published date is empty it's giving it some random, irrelevant value
+                    so advanced_filter doesn't fails in DB searching.
+                3. If there are not date for range it's deleting those keys and valuse from
+                    dictionary so advanced_filter can skip them in searching.
+                4. If there is one date from range it's either gives dateEnd current date
+                    or dateStart some very futher date.
+            """
+            searchdict.pop("parameter")
+            if "dateParameter" in searchdict:
+                searchdict.pop("dateParameter")
+            if "page" in searchdict:
                 searchdict.pop("page")
-            if(not searchdict.get("publishedDate")):
+            if not searchdict.get("publishedDate"):
                 searchdict["publishedDate"] = "1000-01-01"
-            if(not searchdict.get("pageCount")):
-                searchdict["pageCount"] = 0
-            if(not searchdict["dateStart"] and not searchdict["dateEnd"]):
+            if not searchdict["dateStart"] and not searchdict["dateEnd"]:
                 searchdict.pop("dateStart")
                 searchdict.pop("dateEnd")
-            elif(searchdict["dateStart"] and not searchdict["dateEnd"]):
+            elif searchdict["dateStart"] and not searchdict["dateEnd"]:
                 searchdict["dateEnd"] = datetime.datetime.now()
-            elif(not searchdict["dateStart"] and searchdict["dateEnd"]):
-                searchdict["dateStart"] = "1000-01-01"
+            elif not searchdict["dateStart"] and searchdict["dateEnd"]:
+                searchdict["dateStart"] = "1000-01-01"   
+            searchdict["publishedDate__range"] = [str(searchdict["dateStart"]), 
+                                                  str(searchdict["dateEnd"])]  
+            searchdict.pop("dateStart")
+            searchdict.pop("dateEnd")
             for searchword in searchdict:
                 advanced_filter |= Q(**{searchword:searchdict[searchword]})
-        elif (parameter == '2'):
-            emptyFieldsCounter = list(filter(lambda x: x == '',(list(searchdict.values())))).count('')
-            if(not searchdict["dateStart"] and not searchdict["dateEnd"] and emptyFieldsCounter == 2):
-                searchdict.pop("dateStart")
-                searchdict.pop("dateEnd")
-            elif(not searchdict["publishedDate"] and emptyFieldsCounter == 1):
+        elif searchdict["parameter"] == '2':
+            """If user choose "Contain all fields" algorithm do following things.
+                Because all fields are required, depending what date parameter user choose
+                algorithm either deletes publishedDate and after giving range values
+                to new variable it's deleting ranges too or just deleting ranges and leaves
+                publishedDate parameter for exact date searching.
+            """
+            searchdict.pop("parameter")
+            if searchdict["dateParameter"] == '1':
+                searchdict["publishedDate__range"] = [str(searchdict["dateStart"]), 
+                                                      str(searchdict["dateEnd"])]   
                 searchdict.pop("publishedDate")
-                searchdict.pop("dateStart")
-                searchdict.pop("dateEnd")
-                searchdict["publishedDate__range"] = [str(dateStart), str(dateEnd)]
-            elif(emptyFieldsCounter > 2):
-                error = 'You are missing some field(s). Please fill them!'
-                return render(request, template, {'error': error})
-            else:
-                error = 'Use "Exact date" OR "Date from, Date to" for contains all field!'
-                return render(request, template, {'error': error})
+            searchdict.pop("dateStart")
+            searchdict.pop("dateEnd")
+            searchdict.pop("dateParameter")
             for searchword in searchdict:
                 advanced_filter &= Q(**{searchword:searchdict[searchword]})   
         return Book.objects.filter(advanced_filter)

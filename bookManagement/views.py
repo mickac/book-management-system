@@ -8,10 +8,7 @@ import requests
 import re
 
 from django.conf import settings
-from django.core.exceptions import ValidationError
-from django.http import HttpResponse, Http404, request, JsonResponse
 from django.shortcuts import render, get_object_or_404
-from django.db.models import Q
 
 from rest_framework import generics
 from django_filters.rest_framework import DjangoFilterBackend
@@ -84,7 +81,10 @@ def book_search(request):
         dateFrom = request.GET.get('dateFrom')
         dateTo = request.GET.get('dateTo')
         parameter = request.GET.get('parameter')
-        book_list = BookOperations.simple_search(request)
+        try:
+            book_list = BookOperations.simple_search(request)
+        except TypeError:
+            return ErrorHandler.date_range_error(request, template)
         page = request.GET.get('page', 1)
         pageSize = 5
         books = paginator(book_list, page, pageSize)
@@ -102,11 +102,17 @@ def book_advanced_searching(request):
     template = 'book_advanced_searching.html'
     if request.method == 'GET':
         if (len(request.GET) > 0):
-            searchdict = request.GET.copy()
             parameter = request.GET.get('parameter')
+            dateParameter = request.GET.get('dateParameter')
+            title = request.GET.get('title')
+            authors = request.GET.get('authors')
+            language = request.GET.get('language')
+            isbnId = request.GET.get('isbnId')
+            pageCount = request.GET.get('pageCount')
+            exactDate = request.GET.get('exactDate')
             dateStart = request.GET.get('dateStart')
             dateEnd = request.GET.get('dateEnd')
-            book_list = BookOperations.advanced_search(request, template)
+            book_list = BookOperations.advanced_search(request)
             page = request.GET.get('page', 1)
             pageSize = 5
             books = paginator(book_list, page, pageSize)
@@ -117,14 +123,15 @@ def book_advanced_searching(request):
             else:
                 return render(request, template, { 'books': books,
                                                    'parameter':parameter,
-                                                   'title': searchdict["title"],
-                                                   'authors': searchdict["authors"],
-                                                   'language': searchdict["language"],
-                                                   'isbnId': searchdict["isbnId"],
-                                                   'pageCount': searchdict["pageCount"],
+                                                   'dateParameter':dateParameter,
+                                                   'title': title,
+                                                   'authors': authors,
+                                                   'language': language,
+                                                   'isbnId': isbnId,
+                                                   'pageCount': pageCount,
                                                    'dateStart':dateStart,
                                                    'dateEnd': dateEnd, 
-                                                   'exactDate': searchdict["publishedDate"]})
+                                                   'exactDate': exactDate})
         else:
             return render(request, template)
     else:
