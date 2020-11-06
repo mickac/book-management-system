@@ -20,16 +20,13 @@ from django_filters.rest_framework import DjangoFilterBackend
 from .forms import BookForm
 from .models import Book
 from .serializers import BookSerializer
+from .modules.book_operations import BookOperations
+from .modules.validators import IsbnValidator
+from .modules.errors import ErrorHandler
 from .modules.paginator import paginator
-from .modules.validators import(
-    validate_dashes,
-    validate_isbn_len
-)
-from .modules.errors import(
-    generic_error,
-    isbn_validation_error,
-    date_error
-)
+
+
+
 
 class BookList(generics.ListCreateAPIView):
     queryset = Book.objects.all()
@@ -48,22 +45,9 @@ def book_add(request):
         form = BookForm(request.POST)
         if form.is_valid():
             try:
-                isbnType = form.cleaned_data['isbnType']
-                isbnId = form.cleaned_data['isbnId']
-                title = form.cleaned_data['title']
-                try:
-                    validate_dashes(isbnType, isbnId)
-                    validate_isbn_len(isbnType, isbnId)
-                except ValueError as exception:
-                    return isbn_validation_error(request, template, form)
-                else:
-                    book = form.save(commit=False)
-                    book.isbnId = isbnId.replace("-", "")
-                    book.save()
-                    return render(request, template, {'title': title,
-                                                      'form': form})
+                return BookOperations.book_add_or_edit(request, template, form)
             except Exception as exception:
-                return generic_error(request, exception)
+                return ErrorHandler.generic_error(request, exception)
     else:
         form = BookForm()
     return render(request, template, {'form': form})
@@ -78,35 +62,22 @@ def book_list(request):
         books = paginator(book_list, page, pageSize)
         return render(request, template, {'books': books})
     except Exception as exception:
-        return generic_error(request, exception)
+        return ErrorHandler.generic_error(request, exception)
 
 
 def book_edit(request, pk):
-    try:
-        template = 'book_edit.html'
-        book = get_object_or_404(Book, pk=pk)
-        if request.method == "POST":
-            form = BookForm(request.POST, instance=book)
-            if form.is_valid():
-                isbnType = form.cleaned_data['isbnType']
-                isbnId = form.cleaned_data['isbnId']
-                title = form.cleaned_data['title']
-                try:
-                    validate_dashes(isbnType, isbnId)
-                    validate_isbn_len(isbnType, isbnId)
-                except ValueError:
-                    return isbn_validation_error(request, template, form)
-                else:
-                    book = form.save(commit=False)
-                    book.isbnId = isbnId.replace("-", "")
-                    book.save()
-                    return render(request, template, {'title': title,
-                                                      'form': form})
-        else:
-            form = BookForm(instance=book)
-        return render(request, template, {'form': form})
-    except Exception as exception:
-        return generic_error(request, exception)
+    template = 'book_edit.html'
+    book = get_object_or_404(Book, pk=pk)
+    if request.method == "POST":
+        form = BookForm(request.POST, instance=book)
+        if form.is_valid():
+            try:
+                return BookOperations.book_add_or_edit(request, template, form)
+            except Exception as exception:
+                return ErrorHandler.generic_error(request, exception)
+    else:
+        form = BookForm(instance=book)
+    return render(request, template, {'form': form})
 
 
 def book_search(request):
@@ -131,7 +102,7 @@ def book_search(request):
                 else:
                     raise ValueError
             except ValueError:
-                return date_error(request, template)
+                return ErrorHandler.date_error(request, template)
         else:
             searchword = parameter + "__icontains"
         book_list = Book.objects.filter(
@@ -144,8 +115,7 @@ def book_search(request):
                                           'keyword': keyword,
                                           'parameter': parameter})
     except Exception as exception:
-        response = generic_error(request, exception)
-        return response
+        return ErrorHandler.generic_error(request, exception)
 
 
 def book_advanced_searching(request):
