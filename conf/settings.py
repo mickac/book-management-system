@@ -26,14 +26,14 @@ if os.path.isfile(dotenv_file):
 # See https://docs.djangoproject.com/en/3.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'yhbdrnw82c8@e*cl&)7*1*vsfeue#mw*htfj6junrryn)-$si5'
+SECRET_KEY = os.getenv("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
-
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 # Application definition
 
 INSTALLED_APPS = [
