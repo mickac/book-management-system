@@ -4,10 +4,6 @@
     - Unit tests
 """
 
-import requests
-import re
-
-from django.conf import settings
 from django.shortcuts import render, get_object_or_404
 
 from rest_framework import generics
@@ -103,7 +99,7 @@ def book_advanced_searching(request):
     if request.method == 'GET':
         if (len(request.GET) > 0):
             parameter = request.GET.get('parameter')
-            dateParameter = request.GET.get('dateParameter')
+            dateParam = request.GET.get('dateParameter')
             title = request.GET.get('title')
             authors = request.GET.get('authors')
             language = request.GET.get('language')
@@ -116,22 +112,22 @@ def book_advanced_searching(request):
             page = request.GET.get('page', 1)
             pageSize = 5
             books = paginator(book_list, page, pageSize)
-            if (book_list.exists() == False):
+            if (not book_list.exists()):
                 nobooks = True
-                return render(request, template, { 'nobooks': nobooks,
-                                                    'books': books})
+                return render(request, template, {'nobooks': nobooks,
+                                                  'books': books})
             else:
-                return render(request, template, { 'books': books,
-                                                   'parameter':parameter,
-                                                   'dateParameter':dateParameter,
-                                                   'title': title,
-                                                   'authors': authors,
-                                                   'language': language,
-                                                   'isbnId': isbnId,
-                                                   'pageCount': pageCount,
-                                                   'dateStart':dateStart,
-                                                   'dateEnd': dateEnd, 
-                                                   'exactDate': exactDate})
+                return render(request, template, {'books': books,
+                                                  'parameter': parameter,
+                                                  'dateParam': dateParam,
+                                                  'title': title,
+                                                  'authors': authors,
+                                                  'language': language,
+                                                  'isbnId': isbnId,
+                                                  'pageCount': pageCount,
+                                                  'dateStart': dateStart,
+                                                  'dateEnd': dateEnd,
+                                                  'exactDate': exactDate})
         else:
             return render(request, template)
     else:
@@ -142,68 +138,11 @@ def feed_from_google(request):
     template = 'feed_from_google.html'
     resultNumbers = request.GET.get("resultNumbers")
     if request.method == 'GET' and resultNumbers:
-        searchdict = request.GET.copy()
-        q = request.GET.get("q")
-        if("q" in searchdict):
-            searchdict.pop("q")
-        searchdict.pop("resultNumbers")    
-        query = ""
-        for x, y in searchdict.items():
-            if x and y:
-                query = query + "+" + x + ":" + y
-        query = q + query + "&maxResults=" + resultNumbers + "&key=" + settings.GOOGLE_API_KEY
-        if query:
-            API_url = "https://www.googleapis.com/books/v1/volumes?q=" + query
-        if (q == ""):
-            API_url = API_url.replace("+", "", 1)
-        API_url = API_url.replace(" ", "-")
-        API_request = requests.get(API_url, headers={'Content-Type':'application/json'})
-        data = API_request.json()
-        addIter = 0
-        isbn = isbnType = ""
-        noItems = False
-        print(API_url)
-        if data.get("items"):
-            for i in data.get("items"):
-                title = i["volumeInfo"].get("title")
-                authors = i["volumeInfo"].get("authors")
-                publishedDate = i["volumeInfo"].get("publishedDate")
-                if publishedDate and not re.findall("^\d\d\d\d[- /.]\d\d[- /.]\d\d$", publishedDate):
-                    publishedDate = publishedDate + '-01-01'
-                isbnId = i["volumeInfo"].get("industryIdentifiers")
-                pageCount = i["volumeInfo"].get("pageCount")
-                image = i["volumeInfo"].get("imageLinks")                    
-                language = i["volumeInfo"].get("language")
-                if title and authors and image and publishedDate and isbnId and pageCount and image and language:
-                    if len(authors) > 1:
-                        authors = ', '.join(authors)
-                    else:
-                        authors = authors[0]
-                    image = image.get("thumbnail")
-                    for j in isbnId:
-                        if j["type"] == "ISBN_13":
-                            isbn = j.get("identifier")
-                            isbnType = "ISBN-13"
-                        if j["type"] == "ISBN_10" and isbnType != "ISBN-13":
-                            isbn = j.get("identifier")
-                            isbnType = "ISBN-10"
-                    if isbn:
-                        book = Book(
-                            title = title,
-                            authors = authors,
-                            publishedDate = publishedDate,
-                            isbnType = isbnType,
-                            isbnId = isbn,
-                            pageCount = pageCount,
-                            image = image,  
-                            language = language
-                        )
-                        try:
-                            book.save()
-                            addIter += 1
-                            noItems = False
-                        except:
-                            pass
-        return render(request, template, {'addIter': addIter,'noItems': noItems})   
+        noItems = True
+        addedCounter = BookOperations.import_from_google_api(request)
+        if addedCounter > 0:
+            noItems = False
+        return render(request, template, {'addedCounter': addedCounter,
+                                          'noItems': noItems})
     else:
         return render(request, template)

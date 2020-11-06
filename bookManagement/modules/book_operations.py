@@ -1,8 +1,11 @@
 import datetime
+import requests
+import re
 
 from django.shortcuts import render
 from django.db.models import Q
 
+from .api_operations import operationsAPI
 from .validators import IsbnValidator
 from .errors import ErrorHandler
 from ..models import Book
@@ -54,14 +57,17 @@ class BookOperations:
         advanced_filter = Q()
         if searchdict["parameter"] == '1':
             """ If user choose "Contain any fields" algoritm do following things:
-                1. Deleting "page" and "date parameter" from dictionary so advanced_filter
-                    doesn't check those keys and values in DB (causing errors).
-                2. If published date is empty it's giving it some random, irrelevant value
-                    so advanced_filter doesn't fails in DB searching.
-                3. If there are not date for range it's deleting those keys and valuse from
-                    dictionary so advanced_filter can skip them in searching.
-                4. If there is one date from range it's either gives dateEnd current date
-                    or dateStart some very futher date.
+                1. Deleting "page" and "date parameter" from dictionary so
+                    advanced_filter doesn't check those keys
+                    and values in DB (causing errors).
+                2. If published date is empty it's giving it some random,
+                    irrelevant value so advanced_filter
+                    doesn't fails in DB searching.
+                3. If there are not date for range it's deleting
+                    those keys and valuse from dictionary so
+                    advanced_filter can skip them in searching.
+                4. If there is one date from range it's either gives
+                    dateEnd current date or dateStart some very futher date.
             """
             searchdict.pop("parameter")
             if "dateParameter" in searchdict:
@@ -76,28 +82,81 @@ class BookOperations:
             elif searchdict["dateStart"] and not searchdict["dateEnd"]:
                 searchdict["dateEnd"] = datetime.datetime.now()
             elif not searchdict["dateStart"] and searchdict["dateEnd"]:
-                searchdict["dateStart"] = "1000-01-01"   
-            searchdict["publishedDate__range"] = [str(searchdict["dateStart"]), 
-                                                  str(searchdict["dateEnd"])]  
+                searchdict["dateStart"] = "1000-01-01"
+            searchdict["publishedDate__range"] = [str(searchdict["dateStart"]),
+                                                  str(searchdict["dateEnd"])]
             searchdict.pop("dateStart")
             searchdict.pop("dateEnd")
             for searchword in searchdict:
-                advanced_filter |= Q(**{searchword:searchdict[searchword]})
+                advanced_filter |= Q(**{searchword: searchdict[searchword]})
         elif searchdict["parameter"] == '2':
             """If user choose "Contain all fields" algorithm do following things.
-                Because all fields are required, depending what date parameter user choose
-                algorithm either deletes publishedDate and after giving range values
-                to new variable it's deleting ranges too or just deleting ranges and leaves
-                publishedDate parameter for exact date searching.
+                Because all fields are required, depending what
+                date parameter user choose algorithm either deletes
+                publishedDate and after giving range values
+                to new variable it's deleting ranges too or just
+                deleting ranges and leaves publishedDate
+                parameter for exact date searching.
             """
             searchdict.pop("parameter")
             if searchdict["dateParameter"] == '1':
-                searchdict["publishedDate__range"] = [str(searchdict["dateStart"]), 
-                                                      str(searchdict["dateEnd"])]   
+                searchdict["publishedDate__range"] = [str(searchdict["dateStart"]),
+                                                      str(searchdict["dateEnd"])]
                 searchdict.pop("publishedDate")
             searchdict.pop("dateStart")
             searchdict.pop("dateEnd")
             searchdict.pop("dateParameter")
             for searchword in searchdict:
-                advanced_filter &= Q(**{searchword:searchdict[searchword]})   
+                advanced_filter &= Q(**{searchword: searchdict[searchword]})
         return Book.objects.filter(advanced_filter)
+
+    def import_from_google_api(request):
+        API_url = operationsAPI.createQuery(request)
+        API_request = requests.get(API_url, headers={'Content-Type':
+                                                     'application/json'})
+        data = API_request.json()
+        addIter = 0
+        isbn = isbnType = ""
+        if data.get("items"):
+            for i in data.get("items"):
+                title = i["volumeInfo"].get("title")
+                authors = i["volumeInfo"].get("authors")
+                publishedDate = i["volumeInfo"].get("publishedDate")
+                regex = "^\d\d\d\d[- /.]\d\d[- /.]\d\d$"
+                if (publishedDate and not re.findall(regex, publishedDate)):
+                    publishedDate = publishedDate + '-01-01'
+                isbnId = i["volumeInfo"].get("industryIdentifiers")
+                pageCount = i["volumeInfo"].get("pageCount")
+                image = i["volumeInfo"].get("imageLinks")
+                language = i["volumeInfo"].get("language")
+                if (title and authors and image and publishedDate and
+                   isbnId and pageCount and image and language):
+                    if len(authors) > 1:
+                        authors = ', '.join(authors)
+                    else:
+                        authors = authors[0]
+                    image = image.get("thumbnail")
+                    for j in isbnId:
+                        if j["type"] == "ISBN_13":
+                            isbn = j.get("identifier")
+                            isbnType = "ISBN-13"
+                        if j["type"] == "ISBN_10" and isbnType != "ISBN-13":
+                            isbn = j.get("identifier")
+                            isbnType = "ISBN-10"
+                    if isbn:
+                        book = Book(
+                            title=title,
+                            authors=authors,
+                            publishedDate=publishedDate,
+                            isbnType=isbnType,
+                            isbnId=isbn,
+                            pageCount=pageCount,
+                            image=image,
+                            language=language
+                        )
+                        try:
+                            book.save()
+                            addIter += 1
+                        except:
+                            pass
+        return addIter
