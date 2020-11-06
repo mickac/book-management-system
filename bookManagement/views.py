@@ -7,6 +7,7 @@ import datetime
 import requests
 import re
 
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.http import HttpResponse, Http404, request, JsonResponse
 from django.shortcuts import render, get_object_or_404
@@ -28,7 +29,6 @@ from .modules.errors import(
     isbn_validation_error,
     date_error
 )
-from .modules.keys import GoogleApiKey
 
 class BookList(generics.ListCreateAPIView):
     queryset = Book.objects.all()
@@ -113,6 +113,7 @@ def book_search(request):
         template = 'book_search.html'
         keyword = word = request.GET.get('keyword')
         parameter = request.GET.get('parameter')
+
         if (parameter == 'publishedDate'):
             try:
                 word = word.split()
@@ -221,19 +222,16 @@ def feed_from_google(request):
     template = 'feed_from_google.html'
     resultNumbers = request.GET.get("resultNumbers")
     if request.method == 'GET' and resultNumbers:
-        #itemsNumber = request.get("itemsNumber")
         searchdict = request.GET.copy()
         q = request.GET.get("q")
         if("q" in searchdict):
             searchdict.pop("q")
         searchdict.pop("resultNumbers")    
-        #searchdict.pop("itemsNumber")
         query = ""
-        APIKey = GoogleApiKey()
         for x, y in searchdict.items():
             if x and y:
                 query = query + "+" + x + ":" + y
-        query = q + query + "&maxResults=" + resultNumbers + "&key=" + APIKey
+        query = q + query + "&maxResults=" + resultNumbers + "&key=" + settings.GOOGLE_API_KEY
         if query:
             API_url = "https://www.googleapis.com/books/v1/volumes?q=" + query
         if (q == ""):
