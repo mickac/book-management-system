@@ -34,7 +34,7 @@
     </div>
     {% block booklist_paginator %}
         {% load create_list %}
-        {% create_list '&keyword=' keyword '&parameter=' parameter as arguments %}
+        {% create_list '&keyword=' keyword '&dateExact=' dateExact '&dateFrom=' dateFrom '&dateTo=' dateTo '&parameter=' parameter as arguments %}
         {% include 'items/paginators/booklist_paginator.html' %}
     {% endblock %}
 {% endblock %}

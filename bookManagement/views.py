@@ -4,7 +4,6 @@
     - Unit tests
 """
 
-import datetime
 import requests
 import re
 
@@ -21,11 +20,8 @@ from .forms import BookForm
 from .models import Book
 from .serializers import BookSerializer
 from .modules.book_operations import BookOperations
-from .modules.validators import IsbnValidator
 from .modules.errors import ErrorHandler
 from .modules.paginator import paginator
-
-
 
 
 class BookList(generics.ListCreateAPIView):
@@ -81,38 +77,22 @@ def book_edit(request, pk):
 
 
 def book_search(request):
+    template = 'book_search.html'
     try:
-        template = 'book_search.html'
-        keyword = word = request.GET.get('keyword')
+        keyword = request.GET.get('keyword')
+        dateExact = request.GET.get('dateExact')
+        dateFrom = request.GET.get('dateFrom')
+        dateTo = request.GET.get('dateTo')
         parameter = request.GET.get('parameter')
-
-        if (parameter == 'publishedDate'):
-            try:
-                word = word.split()
-                if len(word) == 3:
-                    word.remove('to')
-                    dateStart = datetime.date.fromisoformat(word[0])
-                    dateEnd = datetime.date.fromisoformat(word[1])
-                    word.clear()
-                    word.extend([str(dateStart), str(dateEnd)])
-                    searchword = parameter + "__range"
-                elif len(word) == 1:
-                    word = datetime.date.fromisoformat(word[0])
-                    searchword = parameter + "__icontains"
-                else:
-                    raise ValueError
-            except ValueError:
-                return ErrorHandler.date_error(request, template)
-        else:
-            searchword = parameter + "__icontains"
-        book_list = Book.objects.filter(
-            Q(**{searchword: word})
-        )
+        book_list = BookOperations.simple_search(request)
         page = request.GET.get('page', 1)
         pageSize = 5
         books = paginator(book_list, page, pageSize)
         return render(request, template, {'books': books,
                                           'keyword': keyword,
+                                          'dateExact': dateExact,
+                                          'dateFrom': dateFrom,
+                                          'dateTo': dateTo,
                                           'parameter': parameter})
     except Exception as exception:
         return ErrorHandler.generic_error(request, exception)
@@ -122,49 +102,11 @@ def book_advanced_searching(request):
     template = 'book_advanced_searching.html'
     if request.method == 'GET':
         if (len(request.GET) > 0):
+            searchdict = request.GET.copy()
             parameter = request.GET.get('parameter')
             dateStart = request.GET.get('dateStart')
             dateEnd = request.GET.get('dateEnd')
-            searchdict = request.GET.copy()
-            searchdict.pop("exactDate")
-            searchdict.pop("parameter")
-            searchdict["publishedDate"] = request.GET.get('exactDate')
-            advanced_filter = Q()
-            if(parameter == '1'):
-                if("page" in searchdict):
-                    searchdict.pop("page")
-                if(not searchdict.get("publishedDate")):
-                    searchdict["publishedDate"] = "1000-01-01"
-                if(not searchdict.get("pageCount")):
-                    searchdict["pageCount"] = 0
-                if(not searchdict["dateStart"] and not searchdict["dateEnd"]):
-                    searchdict.pop("dateStart")
-                    searchdict.pop("dateEnd")
-                elif(searchdict["dateStart"] and not searchdict["dateEnd"]):
-                    searchdict["dateEnd"] = datetime.datetime.now()
-                elif(not searchdict["dateStart"] and searchdict["dateEnd"]):
-                    searchdict["dateStart"] = "1000-01-01"
-                for searchword in searchdict:
-                    advanced_filter |= Q(**{searchword:searchdict[searchword]})
-            elif (parameter == '2'):
-                emptyFieldsCounter = list(filter(lambda x: x == '',(list(searchdict.values())))).count('')
-                if(not searchdict["dateStart"] and not searchdict["dateEnd"] and emptyFieldsCounter == 2):
-                    searchdict.pop("dateStart")
-                    searchdict.pop("dateEnd")
-                elif(not searchdict["publishedDate"] and emptyFieldsCounter == 1):
-                    searchdict.pop("publishedDate")
-                    searchdict.pop("dateStart")
-                    searchdict.pop("dateEnd")
-                    searchdict["publishedDate__range"] = [str(dateStart), str(dateEnd)]
-                elif(emptyFieldsCounter > 2):
-                    error = 'You are missing some field(s). Please fill them!'
-                    return render(request, template, {'error': error})
-                else:
-                    error = 'Use "Exact date" OR "Date from, Date to" for contains all field!'
-                    return render(request, template, {'error': error})
-                for searchword in searchdict:
-                    advanced_filter &= Q(**{searchword:searchdict[searchword]})   
-            book_list = Book.objects.filter(advanced_filter)
+            book_list = BookOperations.advanced_search(request, template)
             page = request.GET.get('page', 1)
             pageSize = 5
             books = paginator(book_list, page, pageSize)

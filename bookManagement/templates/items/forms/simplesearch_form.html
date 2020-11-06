@@ -7,8 +7,8 @@
     </a>             
     <input class="form-control" type="text" placeholder='Search by text' id="text" aria-label="Search" name="keyword">
     <input class="form-control" type="date" placeholder='Search exact date' id="dateExact" aria-label="Search" name="dateExact">
-    <input class="form-control" type="date" placeholder='Search date to' id="dateFrom" aria-label="Search" name="dateFrom">
-    <input class="form-control" type="date" placeholder='Search date from' id="dateTo" aria-label="Search" name="dateTo">
+    <input class="form-control" type="date" placeholder='Search date from' id="dateFrom" aria-label="Search" name="dateFrom">
+    <input class="form-control" type="date" placeholder='Search date to' id="dateTo" aria-label="Search" name="dateTo">
     <select class="browser-default custom-select" name="parameter" id="parameter" required>
         <option value="">--------</option>
         <option value="title">Title</option>
@@ -43,6 +43,12 @@
         if (id == "publishedDate"){        
             $('input').hide()
             $('#dateExact').show();
+        }
+        if(id == ""){
+            $('#dateExact').hide()
+            $('#dateFrom').hide()
+            $('#dateTo').hide()
+            $('#text').hide()
         }
     });
 </script>
