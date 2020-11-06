@@ -1,6 +1,4 @@
 """TODO:
-    - PEP8 Validation + Doing some modules for repeating methods
-    - Refactoring code (views to modules, Advanced Searching, Google API Fetch)
     - Unit tests
 """
 
