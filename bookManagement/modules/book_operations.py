@@ -20,7 +20,8 @@ class BookOperations:
         try:
             IsbnValidator.validate_dashes(isbnType, isbnId)
             IsbnValidator.validate_isbn_len(isbnType, isbnId)
-        except ValueError:
+        except ValueError as x:
+            print(x)
             return ErrorHandler.isbn_validation_error(request, template, form)
         else:
             book = form.save(commit=False)

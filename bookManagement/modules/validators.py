@@ -9,17 +9,17 @@ class IsbnValidator:
         except ValueError:
             if isbnType == "ISBN-10":
                 if len(re.findall("^\d+-\d+-\d+-\d+$", isbnId)) == 0:
-                    raise ValueError
+                    raise ValueError("Value Error")
             if isbnType == "ISBN-13":
                 if len(re.findall("^\d+-\d+-\d+-\d+-\d+$", isbnId)) == 0:
-                    raise ValueError
+                    raise ValueError("Value Error")
 
     def validate_isbn_len(isbnType, isbnId):
         """Validating if length of ISBN-10 is 10 and ISBN-13 is 13."""
         isbn_len = len(isbnId.replace("-", ""))
         if isbnType == "ISBN-10":
             if isbn_len != 10:
-                raise ValueError
+                raise ValueError("Value Error")
         elif isbnType == "ISBN-13":
             if isbn_len != 13:
-                raise ValueError
+                raise ValueError("Value Error")
