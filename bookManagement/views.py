@@ -70,22 +70,18 @@ def book_edit(request, pk):
 def book_search(request):
     template = 'book_search.html'
     try:
-        keyword = request.GET.get('keyword')
-        dateExact = request.GET.get('dateExact')
-        dateFrom = request.GET.get('dateFrom')
-        dateTo = request.GET.get('dateTo')
-        parameter = request.GET.get('parameter')
         book_list = BookOperations.simple_search(request)
-        print(book_list)
         page = request.GET.get('page', 1)
         pageSize = 5
         books = paginator(book_list, page, pageSize)
-        return render(request, template, {'books': books,
-                                          'keyword': keyword,
-                                          'dateExact': dateExact,
-                                          'dateFrom': dateFrom,
-                                          'dateTo': dateTo,
-                                          'parameter': parameter})
+        return render(request, template, {
+            'books': books,
+            'keyword': request.GET.get('keyword'),
+            'dateExact': request.GET.get('dateExact'),
+            'dateFrom': request.GET.get('dateFrom'),
+            'dateTo': request.GET.get('dateTo'),
+            'parameter': request.GET.get('parameter'),
+            })
     except Exception as exception:
         return ErrorHandler.generic_error(request, exception)
 
@@ -94,16 +90,6 @@ def book_advanced_searching(request):
     template = 'book_advanced_searching.html'
     if request.method == 'GET':
         if len(request.GET) > 0:
-            parameter = request.GET.get('parameter')
-            dateParam = request.GET.get('dateParameter')
-            title = request.GET.get('title')
-            authors = request.GET.get('authors')
-            language = request.GET.get('language')
-            isbnId = request.GET.get('isbnId')
-            pageCount = request.GET.get('pageCount')
-            exactDate = request.GET.get('exactDate')
-            dateStart = request.GET.get('dateStart')
-            dateEnd = request.GET.get('dateEnd')
             book_list = BookOperations.advanced_search(request)
             page = request.GET.get('page', 1)
             pageSize = 5
@@ -111,19 +97,21 @@ def book_advanced_searching(request):
             if not book_list.exists():
                 nobooks = True
                 return render(request, template, {'nobooks': nobooks,
-                                                  'books': books})
+                              'books': books})
             else:
-                return render(request, template, {'books': books,
-                                                  'parameter': parameter,
-                                                  'dateParam': dateParam,
-                                                  'title': title,
-                                                  'authors': authors,
-                                                  'language': language,
-                                                  'isbnId': isbnId,
-                                                  'pageCount': pageCount,
-                                                  'dateStart': dateStart,
-                                                  'dateEnd': dateEnd,
-                                                  'exactDate': exactDate})
+                return render(request, template, {
+                    'books': books,
+                    'parameter': request.GET.get('parameter'),
+                    'dateParam': request.GET.get('dateParameter'),
+                    'title': request.GET.get('title'),
+                    'authors': request.GET.get('authors'),
+                    'language': request.GET.get('language'),
+                    'isbnId': request.GET.get('isbnId'),
+                    'pageCount': request.GET.get('pageCount'),
+                    'dateStart': request.GET.get('dateStart'),
+                    'dateEnd': request.GET.get('dateEnd'),
+                    'exactDate': request.GET.get('exactDate'),
+                    })
         else:
             return render(request, template)
     else:
@@ -134,7 +122,6 @@ def feed_from_google(request):
     template = 'feed_from_google.html'
     resultNumbers = request.GET.get("resultNumbers")
     if request.method == 'GET' and resultNumbers:
-        noItems = True
         returnData = BookOperations.import_from_google_api(request)
         return render(request, template, {'addedCounter': returnData[0],
                                           'noItems': returnData[1]})

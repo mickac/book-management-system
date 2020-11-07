@@ -1,6 +1,5 @@
-import datetime
+import datetime as dt
 import requests
-import re
 
 from django.shortcuts import render
 from django.db.models import Q
@@ -75,7 +74,7 @@ class BookOperations:
                 searchdict["publishedDate"] = "1000-01-01"
             if searchdict["dateStart"] and not searchdict["dateEnd"]:
                 searchdict["publishedDate__range"] = [str(searchdict["dateStart"]),
-                                                      str(datetime.datetime.now())]
+                                                      str(dt.datetime.now())]
             elif not searchdict["dateStart"] and searchdict["dateEnd"]:
                 searchdict["publishedDate__range"] = ["1000-01-01",
                                                       str(searchdict["dateEnd"])]
