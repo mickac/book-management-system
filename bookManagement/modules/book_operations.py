@@ -20,8 +20,7 @@ class BookOperations:
         try:
             IsbnValidator.validate_dashes(isbnType, isbnId)
             IsbnValidator.validate_isbn_len(isbnType, isbnId)
-        except ValueError as x:
-            print(x)
+        except ValueError:
             return ErrorHandler.isbn_validation_error(request, template, form)
         else:
             book = form.save(commit=False)
@@ -74,15 +73,12 @@ class BookOperations:
                 searchdict.pop("page")
             if not searchdict.get("publishedDate"):
                 searchdict["publishedDate"] = "1000-01-01"
-            if not searchdict["dateStart"] and not searchdict["dateEnd"]:
-                searchdict.pop("dateStart")
-                searchdict.pop("dateEnd")
-            elif searchdict["dateStart"] and not searchdict["dateEnd"]:
-                searchdict["dateEnd"] = datetime.datetime.now()
+            if searchdict["dateStart"] and not searchdict["dateEnd"]:
+                searchdict["publishedDate__range"] = [str(searchdict["dateStart"]),
+                                                      str(datetime.datetime.now())]
             elif not searchdict["dateStart"] and searchdict["dateEnd"]:
-                searchdict["dateStart"] = "1000-01-01"
-            searchdict["publishedDate__range"] = [str(searchdict["dateStart"]),
-                                                  str(searchdict["dateEnd"])]
+                searchdict["publishedDate__range"] = ["1000-01-01",
+                                                      str(searchdict["dateEnd"])]
             searchdict.pop("dateStart")
             searchdict.pop("dateEnd")
             for searchword in searchdict:
