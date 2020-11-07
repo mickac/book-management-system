@@ -75,10 +75,8 @@ def book_search(request):
         dateFrom = request.GET.get('dateFrom')
         dateTo = request.GET.get('dateTo')
         parameter = request.GET.get('parameter')
-        try:
-            book_list = BookOperations.simple_search(request)
-        except TypeError:
-            return ErrorHandler.date_range_error(request, template)
+        book_list = BookOperations.simple_search(request)
+        print(book_list)
         page = request.GET.get('page', 1)
         pageSize = 5
         books = paginator(book_list, page, pageSize)
@@ -95,7 +93,7 @@ def book_search(request):
 def book_advanced_searching(request):
     template = 'book_advanced_searching.html'
     if request.method == 'GET':
-        if (len(request.GET) > 0):
+        if len(request.GET) > 0:
             parameter = request.GET.get('parameter')
             dateParam = request.GET.get('dateParameter')
             title = request.GET.get('title')
@@ -110,7 +108,7 @@ def book_advanced_searching(request):
             page = request.GET.get('page', 1)
             pageSize = 5
             books = paginator(book_list, page, pageSize)
-            if (not book_list.exists()):
+            if not book_list.exists():
                 nobooks = True
                 return render(request, template, {'nobooks': nobooks,
                                                   'books': books})
@@ -137,10 +135,8 @@ def feed_from_google(request):
     resultNumbers = request.GET.get("resultNumbers")
     if request.method == 'GET' and resultNumbers:
         noItems = True
-        addedCounter = BookOperations.import_from_google_api(request)
-        if addedCounter > 0:
-            noItems = False
-        return render(request, template, {'addedCounter': addedCounter,
-                                          'noItems': noItems})
+        returnData = BookOperations.import_from_google_api(request)
+        return render(request, template, {'addedCounter': returnData[0],
+                                          'noItems': returnData[1]})
     else:
         return render(request, template)

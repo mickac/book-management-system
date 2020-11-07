@@ -22,8 +22,3 @@ class ErrorHandler:
         """Raising when data validation fails."""
         error = "There is something wrong with date you have passed."
         return render(request, template, {'error': error})
-
-    def date_range_error(request, template):
-        """Raising when date from is later than date to."""
-        error = "Your end date is earlier than your start date!"
-        return render(request, template, {'error': error})

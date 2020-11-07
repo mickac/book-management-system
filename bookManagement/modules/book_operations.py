@@ -33,9 +33,6 @@ class BookOperations:
         """Preparing data for simple search."""
         parameter = request.GET.get('parameter')
         if parameter == 'dateRange':
-            if request.GET.get('dateFrom') > request.GET.get('dateTo'):
-                print("siema")
-                raise TypeError
             targetword = [str(request.GET.get('dateFrom')),
                           str(request.GET.get('dateTo'))]
             searchword = "publishedDate__range"
@@ -111,52 +108,8 @@ class BookOperations:
         return Book.objects.filter(advanced_filter)
 
     def import_from_google_api(request):
-        API_url = operationsAPI.createQuery(request)
+        API_url = operationsAPI.create_query(request)
         API_request = requests.get(API_url, headers={'Content-Type':
                                                      'application/json'})
         data = API_request.json()
-        addIter = 0
-        isbn = isbnType = ""
-        if data.get("items"):
-            for i in data.get("items"):
-                title = i["volumeInfo"].get("title")
-                authors = i["volumeInfo"].get("authors")
-                publishedDate = i["volumeInfo"].get("publishedDate")
-                regex = "^\d\d\d\d[- /.]\d\d[- /.]\d\d$"
-                if (publishedDate and not re.findall(regex, publishedDate)):
-                    publishedDate = publishedDate + '-01-01'
-                isbnId = i["volumeInfo"].get("industryIdentifiers")
-                pageCount = i["volumeInfo"].get("pageCount")
-                image = i["volumeInfo"].get("imageLinks")
-                language = i["volumeInfo"].get("language")
-                if (title and authors and image and publishedDate and
-                   isbnId and pageCount and image and language):
-                    if len(authors) > 1:
-                        authors = ', '.join(authors)
-                    else:
-                        authors = authors[0]
-                    image = image.get("thumbnail")
-                    for j in isbnId:
-                        if j["type"] == "ISBN_13":
-                            isbn = j.get("identifier")
-                            isbnType = "ISBN-13"
-                        if j["type"] == "ISBN_10" and isbnType != "ISBN-13":
-                            isbn = j.get("identifier")
-                            isbnType = "ISBN-10"
-                    if isbn:
-                        book = Book(
-                            title=title,
-                            authors=authors,
-                            publishedDate=publishedDate,
-                            isbnType=isbnType,
-                            isbnId=isbn,
-                            pageCount=pageCount,
-                            image=image,
-                            language=language
-                        )
-                        try:
-                            book.save()
-                            addIter += 1
-                        except:
-                            pass
-        return addIter
+        return operationsAPI.unpack_and_add(data)

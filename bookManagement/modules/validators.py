@@ -23,5 +23,3 @@ class IsbnValidator:
         elif isbnType == "ISBN-13":
             if isbn_len != 13:
                 raise ValueError
-        else:
-            raise ValueError
