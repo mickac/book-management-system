@@ -20,6 +20,7 @@ class TestIsbnValidator(unittest.TestCase):
                    invalidIsbnType10]
 
     def test_validate_dashes(self):
+        """Testing if dashes validator validates places of dashesh well."""
         for i in TestIsbnValidator.validData:
             self.assertEqual(IsbnValidator.validate_dashes(i[0], i[1]), None)
         for i in TestIsbnValidator.invalidData:
@@ -33,6 +34,7 @@ class TestIsbnValidator(unittest.TestCase):
                                           TestIsbnValidator.invalidNoDashIsbn)
 
     def test_validate_isbn_len(self):
+        """Testing if len validator validates length of isbn well."""
         for i in TestIsbnValidator.validData:
             self.assertEqual(IsbnValidator.validate_isbn_len(i[0], i[1]), None)
         self.assertEqual(IsbnValidator.validate_isbn_len(
