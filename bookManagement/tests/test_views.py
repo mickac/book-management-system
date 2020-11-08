@@ -8,7 +8,8 @@ class TestViews(TestCase):
     def test_book_add(self):
         client = Client()
         response = client.post('/book_add', {})
-        self.assertFormError(response, 'form', 'title', 'This field is required.')
+        self.assertFormError(response, 'form', 'title',
+                             'This field is required.')
 
     def test_book_edit(self):
         client = Client()
