@@ -56,20 +56,30 @@ class operationsAPI:
                             isbn = j.get("identifier")
                             isbnType = "ISBN-10"
                     if isbn:
-                        noItems = False
-                        book = Book(
-                            title=title,
-                            authors=authors,
-                            publishedDate=publishedDate,
-                            isbnType=isbnType,
-                            isbnId=isbn,
-                            pageCount=pageCount,
-                            image=image,
-                            language=language
-                        )
                         try:
+                            Book.objects.get(
+                                    title=title,
+                                    authors=authors,
+                                    publishedDate=publishedDate,
+                                    isbnType=isbnType,
+                                    isbnId=isbn,
+                                    pageCount=pageCount,
+                                    image=image,
+                                    language=language
+                            )
+                        except Book.DoesNotExist:
+                            book = Book(
+                                    title=title,
+                                    authors=authors,
+                                    publishedDate=publishedDate,
+                                    isbnType=isbnType,
+                                    isbnId=isbn,
+                                    pageCount=pageCount,
+                                    image=image,
+                                    language=language
+                            )
+                            noItems = False
                             book.save()
                             addIter += 1
-                        except:
                             pass
         return [addIter, noItems]

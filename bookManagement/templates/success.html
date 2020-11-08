@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+{% block content %}
+{% if title %}
+    <div class="container">
+        <div class="alert alert-success" role="alert">
+            Successfuly removed <i>{{ title }}</i> book.
+        </div>
+    </div>
+{% endif %}
+{% endblock %}

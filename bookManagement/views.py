@@ -63,6 +63,14 @@ def book_edit(request, pk):
     return render(request, template, {'form': form})
 
 
+def book_remove(request, pk):
+    template = 'success.html'
+    get_object_or_404(Book, pk=pk)
+    title = Book.objects.values_list('title', flat=True).get(pk=pk)
+    Book.objects.filter(pk=pk).delete()
+    return render(request, template, {'title': title})
+
+
 def book_search(request):
     template = 'book_search.html'
     try:

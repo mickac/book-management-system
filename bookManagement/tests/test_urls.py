@@ -16,6 +16,10 @@ class TestUrls(unittest.TestCase):
         resolver = resolve('/book_list')
         self.assertEqual(resolver.view_name, 'book_list')
 
+    def test_book_remove(self):
+        url = reverse('book_remove', args=[1])
+        self.assertEqual(url, '/book_remove_1')
+
     def test_book_search(self):
         resolver = resolve('/book_search')
         self.assertEqual(resolver.view_name, 'book_search')
