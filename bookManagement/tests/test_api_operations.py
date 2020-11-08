@@ -10,6 +10,7 @@ from ..modules.api_operations import operationsAPI
 
 class TestApiOperations(unittest.TestCase):
     def test_create_query(self):
+        """Testing creating query for Google Books API."""
         factory = RequestFactory()
         validString = {
             "q": "query",
@@ -38,6 +39,7 @@ class TestApiOperations(unittest.TestCase):
         self.assertEqual(operationsAPI.create_query(validRequest), validQuery)
 
     def test_unpack_and_add(self):
+        """Testing if Google Books API response is parsed properly."""
         validDataJSON = json.loads("""{
                         "kind": "books#volumes",
                         "totalItems": 479,

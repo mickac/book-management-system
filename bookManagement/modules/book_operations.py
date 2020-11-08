@@ -1,4 +1,5 @@
 import datetime as dt
+from re import search
 import requests
 
 from django.shortcuts import render
@@ -73,11 +74,14 @@ class BookOperations:
             if not searchdict.get("publishedDate"):
                 searchdict["publishedDate"] = "1000-01-01"
             if searchdict["dateStart"] and not searchdict["dateEnd"]:
-                searchdict["publishedDate__range"] = [str(searchdict["dateStart"]),
+                searchdict["publishedDate__range"] = [searchdict["dateStart"],
                                                       str(dt.datetime.now())]
-            elif not searchdict["dateStart"] and searchdict["dateEnd"]:
+            if not searchdict["dateStart"] and searchdict["dateEnd"]:
                 searchdict["publishedDate__range"] = ["1000-01-01",
-                                                      str(searchdict["dateEnd"])]
+                                                      searchdict["dateEnd"]]
+            if searchdict["dateStart"] and searchdict["dateEnd"]:
+                searchdict["publishedDate__range"] = [searchdict["dateStart"],
+                                                      searchdict["dateEnd"]]
             searchdict.pop("dateStart")
             searchdict.pop("dateEnd")
             for searchword in searchdict:
@@ -93,8 +97,8 @@ class BookOperations:
             """
             searchdict.pop("parameter")
             if searchdict["dateParameter"] == '1':
-                searchdict["publishedDate__range"] = [str(searchdict["dateStart"]),
-                                                      str(searchdict["dateEnd"])]
+                searchdict["publishedDate__range"] = [searchdict["dateStart"],
+                                                      searchdict["dateEnd"]]
                 searchdict.pop("publishedDate")
             searchdict.pop("dateStart")
             searchdict.pop("dateEnd")
