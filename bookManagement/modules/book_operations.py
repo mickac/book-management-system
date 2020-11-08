@@ -1,5 +1,4 @@
 import datetime as dt
-from re import search
 import requests
 
 from django.shortcuts import render

@@ -89,19 +89,19 @@
             $('#dateParameter').change(function() {
                 var id =this.value;
                 if (id == "1"){
-                    $('#exactDateDiv').prop("required", false);
-                    $('#dateStartDiv').prop("required", true);
-                    $('#dateEndDiv').prop("required", true);    
+                    $('#exactDate').prop("required", false);
+                    $('#dateStart').prop("required", true);
+                    $('#dateEnd').prop("required", true);    
                 } 
                 if (id == "2"){
-                    $('#exactDateDiv').prop("required", true);
-                    $('#dateStartDiv').prop("required", false);
-                    $('#dateEndDiv').prop("required", false);    
+                    $('#exactDate').prop("required", true);
+                    $('#dateStart').prop("required", false);
+                    $('#dateEnd').prop("required", false);    
                 }       
                 if (id == ""){
-                    $('#exactDateDiv').prop("required", false);
-                    $('#dateStartDiv').prop("required", false);
-                    $('#dateEndDiv').prop("required", false);    
+                    $('#exactDate').prop("required", false);
+                    $('#dateStart').prop("required", false);
+                    $('#dateEnd').prop("required", false);    
                 }    
             });          
         }else{
@@ -111,9 +111,9 @@
             $('#language').prop("required", false);
             $('#isbnId').prop("required", false);
             $('#pageCount').prop("required", false);
-            $('#exactDateDiv').prop("required", false);
-            $('#dateStartDiv').prop("required", false);
-            $('#dateEndDiv').prop("required", false);    
+            $('#exactDate').prop("required", false);
+            $('#dateStart').prop("required", false);
+            $('#dateEnd').prop("required", false);    
             $('#dateParameter').prop("required", false);
             $('#exactDateDiv').show();
             $('#dateStartDiv').show();

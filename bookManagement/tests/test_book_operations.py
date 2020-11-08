@@ -41,9 +41,8 @@ class TestBookOperations(unittest.TestCase):
 
     def test_simple_search(self):
         validKeywordDict = {
-            "keyword": "title",
-            "keyword": "author",
-            "keyword": "language"
+            "keyword": ["title", "authors", "language"],
+            "parameter": ["parameter", "parameter", "parameter"]
         }
         validKeywordQ = [
             Book.objects.filter(Q(title__icontains='title')),
@@ -51,9 +50,9 @@ class TestBookOperations(unittest.TestCase):
             Book.objects.filter(Q(language__icontains='language'))
         ]
         validDateExact = Book.objects.filter(
-            Q(publishedDate__exact="2020-10-31"))
+            Q(publishedDate__exact='2020-10-31'))
         validDateRange = Book.objects.filter(
-            Q(publishedDate__range=["2020-10-10", "2020-10-30"]))
+            Q(publishedDate__range=['2020-10-10', '2020-10-30']))
         validDateExactRequest = TestBookOperations.factory.get(
                                                    '/simple_search', {
                                                         'parameter':
@@ -67,16 +66,17 @@ class TestBookOperations(unittest.TestCase):
                                                         'dateFrom':
                                                         '2020-10-10',
                                                         'dateTo':
-                                                        "2020-10-30"})
-        iter = 0
+                                                        '2020-10-30'})
         """ Scenario for any keyword exluding dates."""
-        for i, j in validKeywordDict.items():
-            iter += iter
-            keyword = {i: j, "parameter": j}
+        for i in range(3):
+            keyword = {
+                    "keyword": validKeywordDict["keyword"][i],
+                    "parameter": validKeywordDict["keyword"][i]
+                      }
             validKeywordRequest = TestBookOperations.factory.get(
                                             '/simple_search', keyword)
             testKeyword = BookOperations.simple_search(validKeywordRequest)
-            self.assertEqual(list(testKeyword), list(validKeywordQ[iter]))
+            self.assertEqual(list(testKeyword), list(validKeywordQ[i]))
         """Scenario for date range."""
         self.assertEqual(list(validDateExact),
                          list(BookOperations.simple_search(

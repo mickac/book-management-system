@@ -13,7 +13,7 @@ if os.path.isfile(dotenv_file):
 
 SECRET_KEY = os.getenv("SECRET_KEY")
 
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = ['*']
 

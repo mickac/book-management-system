@@ -1,11 +1,11 @@
 import unittest
-import requests
 import json
 
 from django.test import RequestFactory
 from django.conf import settings
 
 from ..modules.api_operations import operationsAPI
+from ..models import Book
 
 
 class TestApiOperations(unittest.TestCase):
@@ -111,3 +111,4 @@ class TestApiOperations(unittest.TestCase):
                         ]
                     }""")
         self.assertFalse(operationsAPI.unpack_and_add(validDataJSON)[1])
+        Book.objects.filter(isbnId='NKP:3186292203').delete()
