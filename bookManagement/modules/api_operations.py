@@ -23,7 +23,6 @@ class operationsAPI:
         if (q == ""):
             API_url = API_url.replace("+", "", 1)
         API_url = API_url.replace(" ", "-")
-        print(API_url)
         return API_url
 
     def unpack_and_add(data):
