@@ -28,7 +28,7 @@ def book_add(request):
         form = BookForm(request.POST)
         if form.is_valid():
             try:
-                return BookOperations.book_add_or_edit(request, template, form)
+                return BookOperations(request).book_add_or_edit(template, form)
             except Exception as exception:
                 return ErrorHandler.generic_error(request, exception)
     else:
@@ -55,7 +55,7 @@ def book_edit(request, pk):
         form = BookForm(request.POST, instance=book)
         if form.is_valid():
             try:
-                return BookOperations.book_add_or_edit(request, template, form)
+                return BookOperations(request).book_add_or_edit(template, form)
             except Exception as exception:
                 return ErrorHandler.generic_error(request, exception)
     else:
@@ -74,7 +74,7 @@ def book_remove(request, pk):
 def book_search(request):
     template = 'book_search.html'
     try:
-        book_list = BookOperations.simple_search(request)
+        book_list = BookOperations(request).simple_search()
         page = request.GET.get('page', 1)
         pageSize = 5
         books = paginator(book_list, page, pageSize)
@@ -94,7 +94,7 @@ def book_advanced_searching(request):
     template = 'book_advanced_searching.html'
     if request.method == 'GET':
         if len(request.GET) > 0:
-            book_list = BookOperations.advanced_search(request)
+            book_list = BookOperations(request).advanced_search()
             page = request.GET.get('page', 1)
             pageSize = 5
             books = paginator(book_list, page, pageSize)
@@ -126,7 +126,7 @@ def feed_from_google(request):
     template = 'feed_from_google.html'
     resultNumbers = request.GET.get("resultNumbers")
     if request.method == 'GET' and resultNumbers:
-        returnData = BookOperations.import_from_google_api(request)
+        returnData = BookOperations(request).import_from_google_api()
         return render(request, template, {'addedCounter': returnData[0],
                                           'noItems': returnData[1]})
     else:

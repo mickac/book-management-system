@@ -22,27 +22,31 @@ class TestIsbnValidator(unittest.TestCase):
     def test_validate_dashes(self):
         """Testing if dashes validator validates places of dashesh well."""
         for i in TestIsbnValidator.validData:
-            self.assertEqual(IsbnValidator.validate_dashes(i[0], i[1]), None)
+            self.assertEqual(IsbnValidator(i[0], i[1]).validate_dashes(), None)
         for i in TestIsbnValidator.invalidData:
             with self.assertRaises(ValueError):
-                IsbnValidator.validate_dashes(i[0], i[1])
-        self.assertEqual(IsbnValidator.validate_dashes(
-                         "ISBN-13", TestIsbnValidator.validNoDashIsbn),
+                IsbnValidator(i[0], i[1]).validate_dashes()
+        self.assertEqual(IsbnValidator("ISBN-13",
+                         TestIsbnValidator.validNoDashIsbn).validate_dashes(),
                          None)
         with self.assertRaises(ValueError):
-            IsbnValidator.validate_dashes("ISBN-10",
-                                          TestIsbnValidator.invalidNoDashIsbn)
+            IsbnValidator("ISBN-10",
+                          TestIsbnValidator.
+                          invalidNoDashIsbn).validate_dashes()
 
     def test_validate_isbn_len(self):
         """Testing if len validator validates length of isbn well."""
         for i in TestIsbnValidator.validData:
-            self.assertEqual(IsbnValidator.validate_isbn_len(i[0], i[1]), None)
-        self.assertEqual(IsbnValidator.validate_isbn_len(
-                         "ISBN-13", TestIsbnValidator.validNoDashIsbn),
+            self.assertEqual(IsbnValidator(i[0], i[1]).validate_isbn_len(),
+                             None)
+        self.assertEqual(IsbnValidator("ISBN-13",
+                         TestIsbnValidator.validNoDashIsbn).
+                         validate_isbn_len(),
                          None)
         for i in TestIsbnValidator.invalidData:
             with self.assertRaises(ValueError):
-                IsbnValidator.validate_dashes(i[0], i[1])
+                IsbnValidator(i[0], i[1]).validate_dashes()
         with self.assertRaises(ValueError):
-            IsbnValidator.validate_dashes("ISBN-10",
-                                          TestIsbnValidator.invalidNoDashIsbn)
+            IsbnValidator("ISBN-10",
+                          TestIsbnValidator.
+                          invalidNoDashIsbn).validate_dashes()

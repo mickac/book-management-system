@@ -11,44 +11,48 @@ from ..models import Book
 
 
 class BookOperations:
-    def book_add_or_edit(request, template, form):
+    def __init__(self, request):
+        self.request = request
+
+    def book_add_or_edit(self, template, form):
         """Taking parameters from form and adding or editing book."""
         isbnType = form.cleaned_data['isbnType']
         isbnId = form.cleaned_data['isbnId']
         title = form.cleaned_data['title']
         try:
-            IsbnValidator.validate_dashes(isbnType, isbnId)
-            IsbnValidator.validate_isbn_len(isbnType, isbnId)
+            IsbnValidator(isbnType, isbnId).validate_dashes()
+            IsbnValidator(isbnType, isbnId).validate_isbn_len()
         except ValueError:
-            return ErrorHandler.isbn_validation_error(request, template, form)
+            return ErrorHandler.isbn_validation_error(self.request,
+                                                      template, form)
         else:
             book = form.save(commit=False)
             book.isbnId = isbnId.replace("-", "")
             book.save()
-            return render(request, template, {'title': title,
-                                              'form': form})
+            return render(self.request, template, {'title': title,
+                                                   'form': form})
 
-    def simple_search(request):
+    def simple_search(self):
         """Preparing data for simple search."""
-        parameter = request.GET.get('parameter')
+        parameter = self.request.GET.get('parameter')
         if parameter == 'dateRange':
-            targetword = [str(request.GET.get('dateFrom')),
-                          str(request.GET.get('dateTo'))]
+            targetword = [str(self.request.GET.get('dateFrom')),
+                          str(self.request.GET.get('dateTo'))]
             searchword = "publishedDate__range"
         elif parameter == 'publishedDate':
-            targetword = str(request.GET.get('dateExact'))
+            targetword = str(self.request.GET.get('dateExact'))
             searchword = "publishedDate__exact"
         else:
-            targetword = request.GET.get('keyword')
+            targetword = self.request.GET.get('keyword')
             searchword = parameter + "__icontains"
         filtered_list = Book.objects.filter(
             Q(**{searchword: targetword})
         )
         return filtered_list
 
-    def advanced_search(request):
-        searchdict = request.GET.copy()
-        searchdict["publishedDate"] = request.GET.get('exactDate')
+    def advanced_search(self):
+        searchdict = self.request.GET.copy()
+        searchdict["publishedDate"] = self.request.GET.get('exactDate')
         searchdict.pop("exactDate")
         advanced_filter = Q()
         if searchdict["parameter"] == '1':
@@ -106,8 +110,8 @@ class BookOperations:
                 advanced_filter &= Q(**{searchword: searchdict[searchword]})
         return Book.objects.filter(advanced_filter)
 
-    def import_from_google_api(request):
-        API_url = operationsAPI.create_query(request)
+    def import_from_google_api(self):
+        API_url = operationsAPI.create_query(self.request)
         API_request = requests.get(API_url, headers={'Content-Type':
                                                      'application/json'})
         data = API_request.json()
